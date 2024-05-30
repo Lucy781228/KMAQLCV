@@ -1,5 +1,5 @@
 1. Add cron service in your `docker-compose.yml`and build again:
-`  cron:
+`cron:
     image: nextcloud:27
     restart: always
     volumes:
