@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<info xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <!--
+    SPDX-FileCopyrightText: Lucy <ct040407@actv.edu.vn>
+    SPDX-License-Identifier: CC0-1.0
+    -->
+    <id>qlcv</id>
+    <name>Q L C V</name>
+    <summary>https://apps.nextcloud.com/developer/apps/generate</summary>
+    <description><![CDATA[https://apps.nextcloud.com/developer/apps/generate]]></description>
+    <version>0.0.2</version>
+    <licence>agpl</licence>
+    <author mail="ct040407@actv.edu.vn" >Lucy</author>
+    <namespace>QLCV</namespace>
+    <category>organization</category>
+    <bugs>https://apps.nextcloud.com/developer/apps/generate</bugs>
+    <dependencies>
+        <nextcloud min-version="27" max-version="27"/>
+    </dependencies>
+    <background-jobs>
+        <job>OCA\QLCV\Cron\CheckWorkDeadline</job>
+        <job>OCA\QLCV\Cron\SetDoingProject</job>
+    </background-jobs>
+    <navigations>
+        <navigation>
+            <name>Quản Lý Công Việc</name>
+            <route>qlcv.page.index</route>
+        </navigation>
+    </navigations>
+</info>
