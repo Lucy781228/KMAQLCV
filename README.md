@@ -33,6 +33,6 @@ Run the following command to build and start the Docker containers:
 docker-compose up -d --build
 ```
 
-### 5. Enable KMAQLCV App in Nextcloud
+### 4. Enable KMAQLCV App in Nextcloud
 
 After the containers are up and running, enable the KMAQLCV app in the Nextcloud interface.
