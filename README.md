@@ -17,17 +17,7 @@ cron:
     - app-network
 ```
 
-### 2. Create `cron.sh`
-
-In the directory containing `docker-compose.yml`, create a file named `cron.sh` with the following content:
-
-```sh
-#!/bin/sh
-echo "*/5 * * * * php -f /var/www/html/cron.php" > /etc/crontabs/www-data
-crond -f -d 0
-```
-
-### 3. Grant Execute Permission to `cron.sh`
+### 2. Grant Execute Permission to `cron.sh`
 
 Run the following command to grant execute permission to `cron.sh`:
 
@@ -35,7 +25,7 @@ Run the following command to grant execute permission to `cron.sh`:
 chmod +x cron.sh
 ```
 
-### 4. Build and Start the Docker Containers
+### 3. Build and Start the Docker Containers
 
 Run the following command to build and start the Docker containers:
 
