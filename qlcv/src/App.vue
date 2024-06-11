@@ -1,7 +1,7 @@
 <template>
 	<NcContent id="content" app-name="qlcv">
 		<NcAppNavigation>
-			<div class="nav">
+			<template #list>
 				<NcAppNavigationNew text="Thêm dự án" @click="addNewProject" />
 				<NcAppNavigationItem :exact="true" name="Công việc sắp tới" @click="updateValue('Công việc sắp tới')"
 					to="/">
@@ -22,14 +22,14 @@
 					<template>
 						<NcAppNavigationItem v-for="(item, index) in todoProjects" :key="`project-${index}`"
 							:title="t('qlcv', item.project_name)"
-							@click="updateStore(item.project_id, item.project_name, item.user_id)"
+							@click="updateStore(item.project_id, item.project_name, item.user_id, item.status)"
 							:to="{ name: 'project', params: { sharedProjectID: item.project_id } }">
 							<template #icon>
 								<NcAppNavigationIconBullet color="0082c9" />
 							</template>
 							<template v-if="item.user_id == user.uid" #actions>
 								<NcActionButton
-									@click="editProject(item.project_id, item.project_name, item.user_id, item.start_date, item.end_date)">
+									@click="editProject(item.project_id, item.project_name, item.user_id, item.description, item.status)">
 									<template #icon>
 										<Pencil :size="20" />
 									</template>
@@ -44,7 +44,7 @@
 							</template>
 							<template v-else #actions>
 								<NcActionButton
-									@click="editProject(item.project_id, item.project_name, item.user_id, item.start_date, item.end_date)">
+									@click="editProject(item.project_id, item.project_name, item.user_id, item.description, item.status)">
 									<template #icon>
 										<Eye :size="20" />
 									</template>
@@ -67,14 +67,14 @@
 					<template>
 						<NcAppNavigationItem v-for="(item, index) in doingProjects" :key="`project-${index}`"
 							:title="t('qlcv', item.project_name)"
-							@click="updateStore(item.project_id, item.project_name, item.user_id)"
+							@click="updateStore(item.project_id, item.project_name, item.user_id, item.status)"
 							:to="{ name: 'project', params: { sharedProjectID: item.project_id } }">
 							<template #icon>
 								<NcAppNavigationIconBullet color="ddcb55" />
 							</template>
 							<template v-if="item.user_id == user.uid" #actions>
 								<NcActionButton
-									@click="editProject(item.project_id, item.project_name, item.user_id, item.start_date, item.end_date)">
+									@click="editProject(item.project_id, item.project_name, item.user_id, item.description, item.status)">
 									<template #icon>
 										<Pencil :size="20" />
 									</template>
@@ -89,7 +89,7 @@
 							</template>
 							<template v-else #actions>
 								<NcActionButton
-									@click="editProject(item.project_id, item.project_name, item.user_id, item.start_date, item.end_date)">
+									@click="editProject(item.project_id, item.project_name, item.user_id, item.description, item.status)">
 									<template #icon>
 										<Eye :size="20" />
 									</template>
@@ -112,7 +112,7 @@
 					<template>
 						<NcAppNavigationItem v-for="(item, index) in doneProjects" :key="`project-${index}`"
 							:title="t('qlcv', item.project_name)"
-							@click="updateStore(item.project_id, item.project_name, item.user_id)"
+							@click="updateStore(item.project_id, item.project_name, item.user_id, item.status)"
 							:to="{ name: 'project', params: { sharedProjectID: item.project_id } }">
 							<template #icon>
 								<NcAppNavigationIconBullet color="4ce046" />
@@ -127,7 +127,7 @@
 							</template>
 							<template v-else #actions>
 								<NcActionButton
-									@click="editProject(item.project_id, item.project_name, item.user_id, item.start_date, item.end_date)">
+									@click="editProject(item.project_id, item.project_name, item.user_id, item.description, item.status)">
 									<template #icon>
 										<Eye :size="20" />
 									</template>
@@ -137,18 +137,18 @@
 						</NcAppNavigationItem>
 					</template>
 				</NcAppNavigationItem>
-			</div>
-			<!-- <template #footer>
+			</template>
+			<template #footer>
 				<NcAppNavigationItem :exact="true" name="Thống kê và báo cáo" @click="" :to="'/analyst'">
 					<template #icon>
 						<Poll :size="20" />
 					</template>
 				</NcAppNavigationItem>
-			</template> -->
+			</template>
 		</NcAppNavigation>
 
 		<NcAppContent class="parent">
-			<router-view @close="stopModal"/>
+			<router-view @close="stopModal" />
 		</NcAppContent>
 		<NcModal :show="isDelete" :canClose="false" size="small">
 			<div class="modal__content">
@@ -165,14 +165,14 @@
 		</NcModal>
 
 		<NewProject :modal="isAdd" @close="stopModal" :is-edit="isEdit" :project-id="projectId"
-			:project-name="projectName" :start-date="startDate" :end-date="endDate" />
+			:project-name="projectName" :description="description" :status="status" />
 	</NcContent>
 </template>
 
 <script>
 import { NcAppContent, NcActions, NcActionButton, NcButton, NcModal } from "@nextcloud/vue";
 import { NcAppNavigation, NcCounterBubble } from "@nextcloud/vue";
-import { NcAppNavigationItem, NcAppNavigationIconBullet, NcAppNavigationNew } from "@nextcloud/vue";
+import { NcAppNavigationItem, NcAppNavigationIconBullet, NcAppNavigationNew, NcAppNavigationNewItem } from "@nextcloud/vue";
 import { NcContent } from "@nextcloud/vue";
 import CalendarAlertOutline from 'vue-material-design-icons/CalendarAlertOutline'
 import Magnify from 'vue-material-design-icons/Magnify'
@@ -210,7 +210,8 @@ export default {
 		NcButton,
 		NcCounterBubble,
 		Poll,
-		Briefcase
+		Briefcase,
+		NcAppNavigationNewItem
 	},
 	data() {
 		return {
@@ -222,9 +223,9 @@ export default {
 			isEdit: false,
 			isDelete: false,
 			projectId: "",
-			startDate: null,
-			endDate: null,
-			projectName: ""
+			description: "",
+			projectName: "",
+			status: 0
 		};
 	},
 
@@ -242,7 +243,7 @@ export default {
 			this.isDelete = true
 		},
 
-		editProject(id, name, user_id, start_date, end_date) {
+		editProject(id, name, user_id, description, status) {
 			this.$store.commit('updateProject', id)
 			this.$store.commit('updateTitle', name)
 			this.$store.commit('updateProjectOwner', user_id)
@@ -250,8 +251,8 @@ export default {
 			this.isEdit = true
 			this.projectId = id
 			this.projectName = name
-			this.startDate = start_date
-			this.endDate = end_date
+			this.description = description
+			this.status = status
 		},
 
 		stopModal() {
@@ -259,9 +260,9 @@ export default {
 			this.isEdit = false
 			this.isDelete = false
 			this.projectId = ""
-			this.startDate = null
-			this.endDate = null
+			this.description = ""
 			this.projectName = ""
+			this.status = 0
 			this.getProjects()
 		},
 
@@ -269,18 +270,17 @@ export default {
 			this.$store.commit('updateValue', itemName);
 		},
 
-		updateStore(id, name, user_id) {
+		updateStore(id, name, user_id, status) {
 			this.$store.commit('updateProject', id)
 			this.$store.commit('updateTitle', name)
 			this.$store.commit('updateProjectOwner', user_id)
+			this.$store.commit('updateProjectStatus', status)
 		},
 
 		async getProjects() {
 			try {
-				const response = await axios.get(generateUrl(`/apps/qlcv/projects/${this.user.uid}`))
+				const response = await axios.get(generateUrl('/apps/qlcv/projects'))
 				const projects = response.data.projects;
-
-				// Lọc các dự án theo status
 				this.todoProjects = projects.filter(project => project.status === 0);
 				this.doingProjects = projects.filter(project => project.status === 1);
 				this.doneProjects = projects.filter(project => project.status === 2);
@@ -308,7 +308,11 @@ export default {
 
 <style scoped>
 .nav {
-	margin: 10px;
+	margin-left: 10px;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	overflow-y: auto;
+	height: 100% !important
 }
 
 .parent {

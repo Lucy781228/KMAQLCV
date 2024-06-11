@@ -10,33 +10,44 @@ use OCP\AppFramework\Controller;
 use OCA\QLCV\Notification\NotificationHelper;
 use OCP\Notification\IManager as NotificationManager;
 use OCA\QLCV\Service\TaskService;
+use OCA\QLCV\Service\AuthorizationService;
 
 class TaskController extends Controller
 {
     private $notificationHelper;
-
     private $taskService;
+    private $authorizationService;
 
     public function __construct(
         $AppName,
         IRequest $request,
         NotificationManager $notificationManager,
-        TaskService $taskService
+        TaskService $taskService,
+        AuthorizationService $authorizationService,
     ) {
         parent::__construct($AppName, $request);
         $this->notificationHelper = new NotificationHelper(
             $notificationManager
         );
         $this->taskService = $taskService;
+        $this->authorizationService = $authorizationService;
     }
+
     /**
      * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function createTask($work_id, $content, $is_done) {
-        $result = $this->taskService->createTask($work_id, $content, $is_done);
-        // $this->notificationHelper->notifyNewWork($assigned_to, $work_name, 'TEST');
-        return new JSONResponse($result);
+        try {
+            $this->authorizationService->isWorkOwner($work_id);
+            $result = $this->taskService->createTask($work_id, $content, $is_done);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ["error" => $e->getMessage()],
+                $e->getCode()
+            );
+        }
     }
 
     /**
@@ -45,8 +56,16 @@ class TaskController extends Controller
      */
     public function getTasks($work_id)
     {
-        $data = $this->taskService->getTasks($work_id);
-        return new JSONResponse(["tasks" => $data]);
+        try {
+            $this->authorizationService->hasAccessWork($work_id);
+            $data = $this->taskService->getTasks($work_id);
+            return new JSONResponse(["tasks" => $data]);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ["error" => $e->getMessage()],
+                $e->getCode()
+            );
+        }
     }
 
     /**
@@ -54,9 +73,16 @@ class TaskController extends Controller
      * @NoCSRFRequired
      */
     public function updateTask($task_id, $content, $is_done) {
-        $result = $this->taskService->updateTask($task_id, $content, $is_done);
-        // $this->notificationHelper->notifyNewWork($assigned_to, $work_name, 'TEST');
-        return new JSONResponse($result);
+        try {
+            $this->authorizationService->hasAccessWork($work_id);
+            $result = $this->taskService->updateTask($task_id, $content, $is_done);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ["error" => $e->getMessage()],
+                $e->getCode()
+            );
+        }
     }
 
     /**
@@ -65,7 +91,15 @@ class TaskController extends Controller
      */
     public function deleteTask($task_id)
     {
-        $result = $this->taskService->deleteTask($task_id);
-        return new JSONResponse($result);
+        try {
+            $this->authorizationService->isWorkOwner($work_id);
+            $result = $this->taskService->deleteTask($task_id);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ["error" => $e->getMessage()],
+                $e->getCode()
+            );
+        }
     }
 }

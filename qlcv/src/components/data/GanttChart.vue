@@ -10,66 +10,64 @@ export default {
   props: {
     tasks: {
       type: Object,
-      default () {
-        return {data: []}
+      default() {
+        return { data: [] }
       }
     }
   },
-    
-  mounted () {
+
+  mounted() {
     gantt.plugins({
       marker: true
     });
-
-    // Ẩn bảng
-    gantt.config.show_grid = false;
-
-    // Ngăn user thay đổi chiều dài của từng thanh
     gantt.config.readonly = true;
-
-    // Cấu hình thang đo thời gian
     gantt.config.scale_unit = "day";
     gantt.config.date_scale = "%d %M";
     gantt.config.step = 1;
     gantt.config.subscales = [
-      {unit: "month", step: 1, date: "%F %Y"}
+      { unit: "month", step: 1, date: "%F %Y" }
     ];
     gantt.config.scale_height = 50;
 
-    gantt.templates.task_class = function(start, end, task) {
-      return task.color ? `task-color-${task.color}` : 'task-color-default';
-    };
+    gantt.config.columns = [
+      { name: "text", label: "Tên công việc", width: 150, tree: true },
+    ];
 
-    // Tùy chỉnh để hiển thị estimated_duration
     gantt.templates.task_text = (start, end, task) => {
-      return this.showEstimatedDuration(task) || task.text;
+      let taskText = '';
+      let width = 0;
+      if (task.actual_duration) {
+        width = 70 * task.actual_duration;
+        taskText = `<div class="task-text task-texture-diagonal" style="width: ${width}px; height: 29px;">${''}</div>`;
+      } else if (task.estimated_duration) {
+        width = 70 * task.estimated_duration;
+        taskText = `<div class="task-text task-border" style="width: ${width}px; height: 30px;">${''}</div>`;
+      }
+      return taskText;
     };
 
     gantt.init(this.$refs.gantt)
     gantt.parse(this.$props.tasks)
 
+    this.$nextTick(() => {
+    const tasks = gantt.getTaskByTime();
+    if (tasks.length >= 3) {
+      // Lấy ID của task thứ ba
+      const thirdTaskId = tasks[2].id;
+      // Sử dụng ID này để chọn task
+      gantt.selectTask(thirdTaskId);
+      // Cuộn đến task này nếu cần
+      gantt.showTask(thirdTaskId);
+    }
+  });
+
     var currentDate = new Date().setHours(0, 0, 0, 0)
 
-    var todayMarker = gantt.addMarker({ 
+    var todayMarker = gantt.addMarker({
       start_date: currentDate,
-      css: "today", 
+      css: "today",
       text: "Today"
     });
-  },
-  methods: {
-    showEstimatedDuration(task) {
-      if (task.estimated_duration) {
-        const estimatedEndDate = gantt.calculateEndDate({start_date: task.start_date, duration: task.estimated_duration});
-        const estimatedWidth = gantt.posFromDate(estimatedEndDate) - gantt.posFromDate(task.start_date);
-        const taskWidth = gantt.posFromDate(task.end_date) - gantt.posFromDate(task.start_date);
-        const left_position = 0; // Vị trí bắt đầu của thanh estimated_duration
-        return `
-          <div class="estimated-duration-bar" style="position: absolute; left: ${left_position}px; width: ${estimatedWidth}px;"></div>
-          <div class="task-text">${task.text}</div>
-        `;
-      }
-      return task.text;
-    }
   }
 }
 </script>
@@ -81,19 +79,32 @@ export default {
   overflow: visible;
 }
 
-.estimated-duration-bar {
-  height: 100%;
-  background-color: rgba(0, 255, 55); /* Màu xanh nhạt với độ trong suốt */
-  border-radius: 3px;
-  z-index: 1;
-}
-
 .task-text {
   position: relative;
   z-index: 2;
 }
 
-.gray .gantt_task_content {
-  background-color: gray;
+.task-texture-diagonal {
+  background-color: #3DB9D3;
+  background-image: linear-gradient(45deg,
+      rgba(255, 255, 255, 0.4) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0.4) 75%,
+      transparent 75%,
+      transparent);
+  background-size: 30px 30px;
+  color: white;
+  border: none;
+}
+
+.task-border {
+  border: 2px dashed #000;
+  border-radius: 3px;
+}
+
+.gantt_tree_icon {
+    display: none !important;
 }
 </style>

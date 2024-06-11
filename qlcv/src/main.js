@@ -12,9 +12,10 @@ import WorkList from './components/WorkList.vue'
 import NewWork from './components/NewWork.vue'
 import VueRouter from 'vue-router'
 import store from './store'
-import Menu from './components/data/Menu.vue'
+import DataMenu from './components/data/DataMenu.vue'
 import Test from './components/data/Test.vue'
 import WorkMenu from './components/WorkMenu.vue'
+import UpcomingWorkList from './components/UpcomingWorkList.vue'
 
 
 Vue.use(VueRouter)
@@ -38,10 +39,7 @@ const router = new VueRouter({
 	routes: [
 		{
 			path: '/',
-		},
-		{
-			path: '/newwork',
-			component: NewWork,
+			component: UpcomingWorkList,
 		},
 		{
 			name: 'project',
@@ -58,12 +56,17 @@ const router = new VueRouter({
 					path: 'work/:workId',
 					component: WorkMenu,
 					props: true
+				},
+				{
+					name: 'new-work',
+					path: 'newwork',
+					component: NewWork,
 				}
 			],
 		},
 		{
 			path: '/analyst',
-			component: Menu,
+			component: DataMenu,
 		},
 	]
 })

@@ -16,7 +16,7 @@
         </div>
         <div class="reply-form" v-if="replyCommentId === comment.comment_id" v-click-outside="clearReplyCommentId">
           <input class="new-reply" type="text" v-model="reply" placeholder="Trả lời" />
-          <NcButton type="tertiary-no-background" @click="createComment" ariaLabel="A" v-if="reply">
+          <NcButton type="tertiary-no-background" @click="createComment" ariaLabel="A" v-if="reply.trim()!=''">
             <template #icon>
               <SendVariant :size="16" />
             </template>
@@ -26,7 +26,7 @@
     </div>
     <div class="comment-form">
       <textarea class="new-comment" type="text" v-model="message" placeholder="Bình luận"> </textarea>
-      <NcButton type="tertiary-no-background" @click="createComment" ariaLabel="A" v-if="message">
+      <NcButton type="tertiary-no-background" @click="createComment" ariaLabel="A" v-if="message.trim()!=''">
         <template #icon>
           <SendVariant :size="20" />
         </template>
@@ -107,12 +107,12 @@ export default {
 
     async createComment() {
       try {
-        const response = await axios.post('/apps/qlcv/create_comment', {
+        const response = await axios.post(generateUrl('/apps/qlcv/create_comment'), {
           message: this.replyCommentId ? this.reply : this.message,
           reply_comment_id: this.replyCommentId,
           user_id: this.user.uid,
           work_id: this.workId
-        });
+                });
         showSuccess(t('qlcv', 'Thêm thành công'));
         await this.getComments()
         this.message = ''

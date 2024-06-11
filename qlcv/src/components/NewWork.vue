@@ -2,6 +2,7 @@
     <div class="new-work">
         <div class="title">
             <h2>THÊM CÔNG VIỆC</h2>
+            <div class="error">Lưu ý: Chỉ có thể thay đổi danh sách tác vụ với công việc cần làm.</div>
         </div>
         <div class="grid-view-a">
             <div class="grid-item grid-view-b">
@@ -18,12 +19,12 @@
                 <div class="grid-item-b">
                     <label>Nhãn</label>
                     <NcMultiselect ref="label" class="nc-select" v-model="work.label" :options="labels" label="text"
-                        track-by="text" />
+                        placeholder="Chọn một tùy chọn" track-by="text" />
                 </div>
                 <div class="grid-item-b">
                     <label>Người nhận việc (*)</label>
                     <NcMultiselect ref="assigned_to" class="nc-select" v-model="work.assigned_to" :options="formatUsers"
-                        label="userId" track-by="userId" :user-select="true">
+                        placeholder="Chọn một tùy chọn" label="userId" track-by="userId" :user-select="true">
                         <template #singleLabel="{ option }">
                             <NcListItemIcon v-bind="option" :title="option.userId" :avatar-size="24"
                                 :no-margin="true" />
@@ -38,31 +39,28 @@
                 </div>
                 <div class="grid-item-b">
                     <label>Ngày bắt đầu (*)</label>
-                    <NcDatetimePicker ref="start_date" format="DD/MM/YYYY" class="nc-picker" :clearable="true"
-                        v-model="work.start_date" />
+                    <NcDatetimePicker id="start_date" ref="start_date" format="DD/MM/YYYY" class="nc-picker"
+                        placeholder="Chọn một ngày" :clearable="true" v-model="work.start_date" />
                     <div class="validation-error-container">
                         <span class="validation-error"
                             v-if="touchedFields.start_date && !validation.requiredObject(work.start_date)">
                             {{ validationMessages['required'] }}
                         </span>
-                        <span class="validation-error" v-else-if="touchedFields.start_date && !isStartDateValid">
-                            {{ validationMessages['start_date'] }}
-                        </span>
                     </div>
                 </div>
                 <div class="grid-item-b">
                     <label>Ngày kết thúc (*)</label>
-                    <NcDatetimePicker ref="end_date" format="DD/MM/YYYY" class="nc-picker" v-model="work.end_date"
-                        :clearable="true" />
+                    <NcDatetimePicker id="end_date" ref="end_date" format="DD/MM/YYYY" class="nc-picker"
+                        placeholder="Chọn một ngày" v-model="work.end_date" :clearable="true" />
                     <div class="validation-error-container">
                         <span class="validation-error"
                             v-if="touchedFields.end_date && !validation.requiredObject(work.end_date)">
                             {{ validationMessages['required'] }}
                         </span>
-                        <span class="validation-error" v-else-if="touchedFields.end_date && !isEndDateValid">
-                            {{ validationMessages['start_date'] }}
+                        <span class="validation-error" v-if="!isValidEndDate">
+                            Ngày kết thúc phải sau ngày hiện tại
                         </span>
-                        <span class="validation-error" v-if="!isValidDate">
+                        <span class="validation-error" v-else-if="!isValidDate">
                             Ngày kết thúc phải sau ngày bắt đầu
                         </span>
                     </div>
@@ -85,7 +83,8 @@
                 </div>
                 <div class="task-field">
                     <input type="text" v-model="taskContent" placeholder="Thêm tác vụ" />
-                    <NcButton type="primary" :disabled="!taskContent" @click="addToTaskField" ariaLabel="A">
+                    <NcButton type="primary" :disabled="taskContent.trim() === ''" @click="addToTaskField"
+                        ariaLabel="A">
                         <template #icon>
                             <ArrowRight :size="20" />
                         </template>
@@ -129,11 +128,8 @@ export default {
     data() {
         return {
             isValidDate: true,
+            isValidEndDate: true,
             project: null,
-            dateRange: {
-                startDate: null,
-                endDate: null,
-            },
             touchedFields: {
                 work_name: false,
                 start_date: false,
@@ -146,50 +142,44 @@ export default {
                 start_date: null,
                 end_date: null,
                 assigned_to: null,
-                label: ''
+                label: { text: 'Trung bình' }
             },
             users: [],
             labels: [
-                { text: 'Gấp' },
-                { text: 'Quan trọng' },
-                { text: 'Bình thường' }
+                { text: 'Cao' },
+                { text: 'Trung bình' },
+                { text: 'Thấp' }
             ],
             taskContent: '',
             tasks: [],
             validationMessages: {
                 'required': 'Không được để trống',
-                'start_date': null,
             },
             user: getCurrentUser(),
         }
     },
 
     watch: {
-        work(newVal) {
-            if (newVal) {
-                if (this.work.start_date != null && this.work.end_date != null) {
-                    this.isValidDate = this.work.start_date < this.work.end_date
-                }
-            }
-        },
-
-        dateRange: {
-            handler(newVal) {
-                this.validationMessages.start_date = `Từ ${this.formatDateToDDMMYYYY(newVal.startDate)} đến ${this.formatDateToDDMMYYYY(newVal.endDate)}`;
+        work: {
+            handler: function (newVal, oldVal) {
+                this.isValidDate = this.validateDates()
+                this.isValidEndDate = this.validateEndDate()
             },
             deep: true
         }
     },
 
     computed: {
+        sharedProjectStatus() {
+            return this.$store.state.sharedProjectStatus;
+        },
 
         isFormValid() {
-            return this.isValidDate &&
+            return this.isValidDate && this.isValidEndDate &&
                 this.validation.requiredObject(this.work.start_date) &&
                 this.validation.requiredObject(this.work.end_date) &&
                 this.validation.requiredObject(this.work.assigned_to) &&
-                this.validation.requiredString(this.work.work_name) &&
-                this.isEndDateValid && this.isEndDateValid && this.tasks.length
+                this.validation.requiredString(this.work.work_name) && this.tasks.length
         },
 
         formatUsers() {
@@ -210,32 +200,35 @@ export default {
         validation() {
             return validation;
         },
-
-        isStartDateValid() {
-            if (!this.work.start_date) return false;
-            const dateObj = new Date(this.work.start_date);
-            return dateObj >= new Date(this.dateRange.startDate) && dateObj <= new Date(this.dateRange.endDate);
-        },
-
-        isEndDateValid() {
-            if (!this.work.end_date) return false;
-            const dateObj = new Date(this.work.end_date);
-            return dateObj >= new Date(this.dateRange.startDate) && dateObj <= new Date(this.dateRange.endDate);
-        },
     },
 
-    mounted() {
+    async mounted() {
         this.getUsers()
-        this.getCurrentProject()
         this.attachBlurListener(this.$refs.assigned_to, 'assigned_to');
         this.attachBlurListener(this.$refs.start_date, 'start_date');
         this.attachBlurListener(this.$refs.end_date, 'end_date');
     },
 
     methods: {
+        validateDates() {
+            if (this.work.start_date && this.work.end_date) {
+                return this.work.start_date < this.work.end_date;
+            }
+            return true;
+        },
+
+        validateEndDate() {
+            if (this.work.end_date) {
+                return this.work.end_date > new Date().setHours(0, 0, 0, 0)
+            }
+            return true;
+        },
+
         formatDateToDDMMYYYY(inputDate) {
-            const parts = inputDate.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            if (inputDate) {
+                const parts = inputDate.split('-');
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
         },
 
         attachBlurListener(componentRef, fieldName) {
@@ -291,6 +284,7 @@ export default {
 
         async createWork() {
             try {
+                const status = this.work.start_date <= new Date().setHours(0, 0, 0, 0) ? 1 : 0
                 const response = await axios.post(generateUrl('/apps/qlcv/create_work'), {
                     project_id: this.receivedProjectID,
                     work_name: this.work.work_name,
@@ -300,10 +294,11 @@ export default {
                     label: this.work.label.text,
                     assigned_to: this.work.assigned_to.userId,
                     contents: this.tasks,
-                    owner: this.user.uid
+                    owner: this.user.uid,
+                    status: status
                 });
 
-                console.log(response.data)
+                if (status == 1 && this.sharedProjectStatus == 0) this.updateProject()
 
                 showSuccess("Tạo thành công.")
                 this.cancel()
@@ -313,19 +308,25 @@ export default {
             }
         },
 
-        cancel() {
-            this.$router.push(`/project/${this.receivedProjectID}`);
-        },
-
-        async getCurrentProject() {
+        async updateProject() {
             try {
-                const response = await axios.get(generateUrl(`/apps/qlcv/project/${this.receivedProjectID}`))
-                this.dateRange.endDate = response.data.project.end_date;
-                this.dateRange.startDate = response.data.project.start_date;
-
+                const response = await axios.put('/apps/qlcv/update_project', {
+                    project_name: null,
+                    description: null,
+                    user_id: null,
+                    project_id: this.receivedProjectID,
+                    status: 1
+                });
+                this.$store.commit('updateProjectStatus', 1)
             } catch (e) {
                 console.error(e)
             }
+        },
+
+        cancel() {
+            this.$emit('back-to-worklist');
+            console.log('from workmenu')
+            this.$router.push({ name: 'project', params: { receivedProjectID: this.$route.params.sharedProjectID } });
         },
     }
 }
@@ -336,7 +337,7 @@ export default {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 60px;
-    height: 90%;
+    height: 80%;
 }
 
 .new-work .grid-item {
@@ -378,7 +379,7 @@ export default {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90%;
-    height: 70%;
+    height: 75%;
 }
 
 input {
@@ -485,5 +486,10 @@ input {
 
 .validation-error-container {
     height: 10px;
+}
+
+.error {
+    color: red;
+    font-size: 1.2em;
 }
 </style>

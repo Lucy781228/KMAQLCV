@@ -43,7 +43,7 @@ class NotificationHelper {
     }
 
     public function notifyChangeWorkStart($recipientUserId, $projectName, $workName) {
-        $this->createAndSendNotification($recipientUserId, 'change-wor-start', [$projectName, $workName]);
+        $this->createAndSendNotification($recipientUserId, 'change-work-start', [$projectName, $workName]);
     }
 
     public function notifyChangeWorkEnd($recipientUserId, $projectName, $workName) {

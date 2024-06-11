@@ -1,25 +1,26 @@
 <template>
-    <NcModal v-if="true" size="large" :canClose="false">
+    <NcModal v-if="work" size="large" :canClose="false">
         <div class="modal__content">
             <NcAppSidebar @close="closeMenu" class="sidebar">
                 <NcAppSidebarTab name="Chi tiết" id="details" order="1">
                     <template #icon>
                         <Home :size="20" />
                     </template>
-                    <Details v-if="work" :work-id="workId" :is-project-owner="isProjectOwner" :disabled="work.status"/>
+                    <Details v-if="work" :work-id="workId" :status="work.status" :is-owner="user.uid == work.owner" />
                 </NcAppSidebarTab>
                 <NcAppSidebarTab name="Tác vụ" id="tasks" order="2">
                     <template #icon>
                         <CardsVariant :size="20" />
                     </template>
-                    <Task v-if="work" :work-id="workId" :is-project-owner="isProjectOwner" :disabled="work.status" :is-todo-work="work.status"/>
+                    <Task v-if="work" :work-id="workId" :is-assigned="user.uid == work.assigned_to"
+                        :status="work.status" :is-owner="user.uid == work.owner" />
                 </NcAppSidebarTab>
                 <NcAppSidebarTab name="Đính kèm" id="attachment" order="3">
                     <template #icon>
                         <Paperclip :size="20" />
                     </template>
-                    <File v-if="work" :work-id="workId" :assigned-to="work.assigned_to" :owner="work.owner"
-                        :shareUser="shareUser" />
+                    <File v-if="work" :work-id="workId" :owner="work.owner" :assigned-to="work.assigned_to"
+                        :is-owner="user.uid == work.owner" />
                 </NcAppSidebarTab>
                 <NcAppSidebarTab name="Bình luận" id="comment" order="4">
                     <template #icon>
@@ -74,24 +75,17 @@ export default {
         return {
             work: null,
             user: getCurrentUser(),
-            shareUser: '',
         }
     },
 
-    mounted() {
-        this.getWork()
+    async mounted() {
+        await this.getWork()
     },
 
     computed: {
         receivedProjectID() {
             return this.$store.state.sharedProjectID;
         },
-        receivedUserID() {
-            return this.$store.state.sharedProjectOwner;
-        },
-        isProjectOwner() {
-            return this.user.uid == this.receivedUserID;
-        }
     },
 
     methods: {
@@ -99,14 +93,14 @@ export default {
             this.$emit('back-to-worklist');
             console.log('from workmenu')
             this.$router.push({ name: 'project', params: { receivedProjectID: this.$route.params.sharedProjectID } });
+
         },
 
         async getWork() {
             try {
                 const response = await axios.get(generateUrl(`/apps/qlcv/work_by_id/${this.workId}`));
                 this.work = response.data.work
-                this.shareUser = this.user.uid == this.work.assigned_to ? this.work.owner : this.work.assigned_to
-
+                this.$store.commit('updateWorkStatus', this.work.status)
             } catch (e) {
                 console.error(e)
             }
@@ -119,7 +113,6 @@ export default {
 ::v-deep .sidebar {
     max-width: none !important;
     width: 100% !important;
-    /* height: 650px !important; */
 }
 
 ::v-deep .app-sidebar-header {

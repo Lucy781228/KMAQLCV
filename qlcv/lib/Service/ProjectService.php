@@ -14,7 +14,7 @@ class ProjectService {
         $this->db = $db;
     }
 
-    public function createProject($project_id, $project_name, $user_id, $start_date, $end_date, $status) {
+    public function createProject($project_id, $project_name, $user_id, $description, $status) {
 
         try {
             $query = $this->db->getQueryBuilder();
@@ -23,8 +23,7 @@ class ProjectService {
                       "project_id" => $query->createNamedParameter($project_id),
                       "project_name" => $query->createNamedParameter($project_name),
                       "user_id" => $query->createNamedParameter($user_id),
-                      "start_date" => $query->createNamedParameter($start_date),
-                      "end_date" => $query->createNamedParameter($end_date),
+                      "description" => $query->createNamedParameter($description),
                       "status" => $query->createNamedParameter($status),
                   ])
                   ->execute();
@@ -54,7 +53,7 @@ class ProjectService {
     
             return $data;
         } catch (\Exception $e) {
-            throw new Exception("ERROR: " . $e->getMessage());
+            throw new \Exception("ERROR: " . $e->getMessage());
         }
     }
 
@@ -77,12 +76,11 @@ class ProjectService {
         }
     }
 
-    public function updateProject($project_id, $project_name, $user_id, $start_date, $end_date, $status) {
+    public function updateProject($project_id, $project_name, $user_id, $description, $status) {
         try {
             $sql = 'UPDATE `oc_qlcv_project` SET `project_name` = COALESCE(?, `project_name`), 
                                                 `user_id` = COALESCE(?, `user_id`), 
-                                                `start_date` = COALESCE(?, `start_date`), 
-                                                `end_date` = COALESCE(?, `end_date`),
+                                                `description` = COALESCE(?, `description`), 
                                                 `status` = COALESCE(?, `status`)
                                                 WHERE `project_id` = ?';
             $query = $this->db->prepare($sql);
@@ -90,8 +88,7 @@ class ProjectService {
             $query->execute([
                 $project_name,
                 $user_id,
-                $start_date,
-                $end_date,
+                $description,
                 $status,
                 $project_id,
             ]);
@@ -115,26 +112,45 @@ class ProjectService {
         }
     }
 
-    public function setDoingProject() {
-        try {
-            $query = $this->db->getQueryBuilder();
-            $query->select("p.project_id", "p.project_name")
-                  ->from("qlcv_project", "p")
-                  ->where($query->expr()->eq("p.status", 0));
+    public function updateProjectStatus($project_id)
+    {
+        $query = $this->db->getQueryBuilder();
+        $query
+            ->select($query->func()->count("*", "total_work_count"))
+            ->from("qlcv_work")
+            ->where(
+                $query->expr()->eq(
+                    "project_id",
+                    $query->createNamedParameter($project_id)
+                )
+            );
+        $totalWorkCount = $query->execute()->fetchColumn();
     
-            $result = $query->execute();
-            $projects = $result->fetchAll();
+        $query = $this->db->getQueryBuilder();
+        $query
+            ->select($query->func()->count("*", "done_work_count"))
+            ->from("qlcv_work")
+            ->where(
+                $query->expr()->eq(
+                    "project_id",
+                    $query->createNamedParameter($project_id)
+                )
+            )
+            ->andWhere(
+                $query->expr()->eq(
+                    "status",
+                    $query->createNamedParameter(3)
+                )
+            );
+        $doneWorkCount = $query->execute()->fetchColumn();
     
-            $projectIds = array_column($projects, 'project_id');
-            $query = $this->db->getQueryBuilder();
-            $query->update("qlcv_project")
-                  ->set("status", 1)
-                  ->where($query->expr()->in("project_id", $query->createNamedParameter($projectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
-    
-            $affectedRows = $query->execute();
-            return "success";
-        } catch (Exception $e) {
-            return "fail";
+        if ($totalWorkCount == $doneWorkCount && $totalWorkCount > 0) {
+            return true;
+        } else {
+            return false;
         }
+    }
+
+    public function setDoingProject() {
     }
 }

@@ -15,12 +15,15 @@ declare(strict_types=1);
  */
 return [
     'routes' => [
+
+        // Page
+        ['name' => 'test#predictCompletionTime', 'url' => '/predictCompletionTime', 'verb' => 'GET'],
+
         // Page
         ['name' => 'page#index', 'url' => '/', 'verb' => 'GET'],
 
         // Data
-        ['name' => 'Data#countWorksPerProject', 'url' => '/data/count_works/{user_id}', 'verb' => 'GET'],
-        ['name' => 'Data#doneWorksPerProject', 'url' => '/data/done_works/{user_id}', 'verb' => 'GET'],
+        ['name' => 'Data#countWorksPerProject', 'url' => '/data/count_works/{userId}', 'verb' => 'GET'],
 
         //User
         ['name' => 'User#getUsers', 'url' => '/users', 'verb' => 'GET'],
@@ -28,14 +31,17 @@ return [
 
         // File
         ['name' => 'file#uploadFile', 'url' => '/upload_file', 'verb' => 'POST'],
-        ['name' => 'file#deleteFile', 'url' => '/delete_file/{file_id}', 'verb' => 'DELETE'],
-        ['name' => 'file#downloadFile', 'url' => '/download_file/{file_id}/{share_by}', 'verb' => 'GET'],
+        ['name' => 'file#deleteFile', 'url' => '/delete_file/{file_id}/{owner}', 'verb' => 'DELETE'],
+        ['name' => 'file#downloadFile', 'url' => '/download_file', 'verb' => 'GET'],
         ['name' => 'file#getFiles', 'url' => '/get_files', 'verb' => 'GET'],
-
+        ['name' => 'file#createFile', 'url' => '/create_file', 'verb' => 'POST'],
+        ['name' => 'file#shareFolder', 'url' => '/share_folder', 'verb' => 'GET'],
+        ['name' => 'file#setReadPermission', 'url' => '/set_read_permission', 'verb' => 'GET'],
+        ['name' => 'file#addCreatePermission', 'url' => '/add_create_permission', 'verb' => 'GET'],
 
         // Project
         ['name' => 'Project#createProject', 'url' => '/create_project', 'verb' => 'POST'],
-        ['name' => 'Project#getProjects', 'url' => '/projects/{user_id}', 'verb' => 'GET'],
+        ['name' => 'Project#getProjects', 'url' => '/projects', 'verb' => 'GET'],
         ['name' => 'Project#getAProject', 'url' => '/project/{project_id}', 'verb' => 'GET'],
         ['name' => 'Project#updateProject', 'url' => '/update_project', 'verb' => 'PUT'],
         ['name' => 'Project#deleteProject', 'url' => '/delete_project/{project_id}', 'verb' => 'DELETE'],
@@ -53,12 +59,9 @@ return [
 
         // Task
         ['name' => 'Task#getTasks', 'url' => '/tasks/{work_id}', 'verb' => 'GET'],
-
-
         ['name' => 'Task#createTask', 'url' => '/create_task', 'verb' => 'POST'],
-        ['name' => 'Task#getTaskById', 'url' => '/tasks_by_id/{id}', 'verb' => 'GET'],
         ['name' => 'Task#updateTask', 'url' => '/update_task', 'verb' => 'PUT'],
-        ['name' => 'Task#deleteTask', 'url' => '/delete_task/{id}', 'verb' => 'DELETE'],
+        ['name' => 'Task#deleteTask', 'url' => '/delete_task/{task_id}', 'verb' => 'DELETE'],
 
     ],
 ];

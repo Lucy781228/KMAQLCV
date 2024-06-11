@@ -44,13 +44,13 @@ class Notifier implements INotifier
 
             case "create-work":
                 $notification->setParsedSubject(
-                    $l->t("Tác vụ %s đã được giao tới bạn.", [$params[0]])
+                    $l->t("Tác vụ [%s] đã được giao tới bạn.", [$params[0]])
                 );
                 break;
 
             case "rename-project":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s được đổi tên thành %s.", [
+                    $l->t("Dự án [%s] được đổi tên thành [%s].", [
                         $params[0],
                         $params[1],
                     ])
@@ -59,67 +59,67 @@ class Notifier implements INotifier
 
             case "change-project-start":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s đã cập nhật ngày bắt đầu.", [$params[0]])
+                    $l->t("Dự án [%s] đã cập nhật ngày bắt đầu.", [$params[0]])
                 );
                 break;
 
             case "change-project-end":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s đã cập nhật ngày kết thúc.", [$params[0]])
+                    $l->t("Dự án [%s] đã cập nhật ngày kết thúc.", [$params[0]])
                 );
                 break;
 
             case "new-work":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Bạn được giao công việc %s.", [
+                    $l->t("Dự án [%s]: Bạn được giao công việc [%s].", [
                         $params[0],
-                        $params[1],
+                        $params[1]
                     ])
                 );
                 break;
 
             case "rename-work":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s được đổi tên thành %s.", [
+                    $l->t("Dự án [%s]: Công việc [%s] được đổi tên thành [%s].", [
                         $params[0],
                         $params[1],
-                        $params[2],
+                        $params[2]
                     ])
                 );
                 break;
 
             case "change-work-start":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s đã cập nhật ngày bắt đầu.", [
+                    $l->t("Dự án [%s]: Công việc [%s] đã cập nhật ngày bắt đầu.", [
                         $params[0],
-                        $params[1],
+                        $params[1]
                     ])
                 );
                 break;
 
             case "change-work-end":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s đã cập nhật ngày kết thúc.", [
+                    $l->t("Dự án [%s]: Công việc [%s] đã cập nhật ngày kết thúc.", [
                         $params[0],
-                        $params[1],
+                        $params[1]
                     ])
                 );
                 break;
 
             case "change-work-label":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s đã cập nhật nhãn.", [
+                    $l->t("Dự án [%s]: Công việc [%s] đã cập nhật nhãn.", [
                         $params[0],
-                        $params[1],
+                        $params[1]
                     ])
                 );
                 break;
 
             case "change-work-description":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s đã cập nhật mô tả.", [
+                    $l->t("Dự án [%s]: Công việc [%s] đã cập nhật mô tả.", [
                         $params[0],
-                        $params[1],
+                        $params[1]
                     ])
                 );
                 break;
@@ -127,7 +127,7 @@ class Notifier implements INotifier
             case "change-work-tasks":
                 $notification->setParsedSubject(
                     $l->t(
-                        "Dự án %s: Công việc %s đã cập nhật danh sách tác vụ.",
+                        "Dự án [%s]: Công việc [%s] đã cập nhật danh sách tác vụ.",
                         [$params[0], $params[1]]
                     )
                 );
@@ -135,7 +135,7 @@ class Notifier implements INotifier
 
             case "30day-work":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s còn 30 ngày đến hạn.", [
+                    $l->t("Dự án [%s]: Công việc [%s] còn 30 ngày đến hạn.", [
                         $params[0],
                         $params[1],
                     ])
@@ -144,7 +144,7 @@ class Notifier implements INotifier
 
             case "7day-work":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s còn 7 ngày đến hạn.", [
+                    $l->t("Dự án [%s]: Công việc [%s] còn 7 ngày đến hạn.", [
                         $params[0],
                         $params[1],
                     ])
@@ -153,7 +153,7 @@ class Notifier implements INotifier
 
             case "due-work":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s đã đến hạn.", [
+                    $l->t("Dự án [%s]: Công việc [%s] đã đến hạn.", [
                         $params[0],
                         $params[1],
                     ])
@@ -163,7 +163,7 @@ class Notifier implements INotifier
             case "approved-work":
                 $notification->setParsedSubject(
                     $l->t(
-                        "Dự án %s: Công việc %s đã được duyệt và chuyển sang trạng thái hoàn thành.",
+                        "Dự án [%s]: Công việc [%s] đã được duyệt và chuyển sang trạng thái hoàn thành.",
                         [$params[0], $params[1]]
                     )
                 );
@@ -171,7 +171,7 @@ class Notifier implements INotifier
 
             case "returned-work":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s bị trả về.", [
+                    $l->t("Dự án [%s]: Công việc [%s] bị trả về.", [
                         $params[0],
                         $params[1],
                     ])
@@ -180,7 +180,7 @@ class Notifier implements INotifier
 
             case "new-commnent":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s có bình luận mới.", [
+                    $l->t("Dự án [%s]: Công việc [%s] có bình luận mới.", [
                         $params[0],
                         $params[1],
                     ])
@@ -189,7 +189,7 @@ class Notifier implements INotifier
 
             case "new-file":
                 $notification->setParsedSubject(
-                    $l->t("Dự án %s: Công việc %s có file mới.", [
+                    $l->t("Dự án [%s]: Công việc [%s] có file mới.", [
                         $params[0],
                         $params[1],
                     ])
@@ -199,7 +199,7 @@ class Notifier implements INotifier
             case "delete-work":
                 $notification->setParsedSubject(
                     $l->t(
-                        "Dự án %s: Công việc %s đã bị xóa. Hãy liên hệ chủ sở hữu của dự án.",
+                        "Dự án [%s]: Công việc [%s] đã bị xóa. Hãy liên hệ chủ sở hữu của dự án.",
                         [$params[0], $params[1]]
                     )
                 );
@@ -211,9 +211,9 @@ class Notifier implements INotifier
 
         // Set the link and icon if applicable
         // $notification->setLink($this->urlGenerator->linkToRouteAbsolute('your.route.name'));
-        // $notification->setIcon(
-        //     $this->urlGenerator->imagePath("qlcv", "app.svg")
-        // );
+        $notification->setIcon(
+            $this->urlGenerator->imagePath("qlcv", "notif_icon.svg")
+        );
         return $notification;
     }
 }

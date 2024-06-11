@@ -1,7 +1,7 @@
 <template>
   <div class="files">
-    <div class="grid-container">
-      <div class="grid-item upload">
+    <div class="grid-container" :style="{ 'grid-template-columns': gridContainerStyle }">
+      <div class="grid-item upload" v-if="sharedWorkStatus == 1 || isOwner">
         <TrayArrowUp :size="70" />
         <NcButton :wide="true" type="primary" @click="triggerFileInput">Tải lên</NcButton>
         <input type="file" ref="fileInput" @change="handleFileChange" style="display: none;" />
@@ -12,23 +12,21 @@
             <li v-for="file in files" :key="file.file_id">
               <NcListItem :title="file.file_name" :bold="false" :details="formatDateTime(file.mtime)">
                 <template #subtitle>
-                  {{ formatFileSize(file.size) }}
+                  {{ formatFileSize(file.size) + ' ' + showName(file.uploaded_by) }}
                 </template>
                 <template #actions>
-                  <NcActions>
-                    <NcActionButton @click="downloadFile(file.file_id)">
-                      <template #icon>
-                        <ArrowCollapseDown :size="20" />
-                      </template>
-                      Tải xuống
-                    </NcActionButton>
-                    <NcActionButton @click="deleteFile(file.file_id)" v-if="user.uid == file.owner">
-                      <template #icon>
-                        <Delete :size="20" />
-                      </template>
-                      Xóa
-                    </NcActionButton>
-                  </NcActions>
+                  <NcActionButton @click="downloadFile(file.file_id)">
+                    <template #icon>
+                      <ArrowCollapseDown :size="20" />
+                    </template>
+                    Tải xuống
+                  </NcActionButton>
+                  <NcActionButton @click="deleteFile(file.file_id)" v-if="user.uid == owner">
+                    <template #icon>
+                      <Delete :size="20" />
+                    </template>
+                    Xóa
+                  </NcActionButton>
                 </template>
               </NcListItem>
             </li>
@@ -43,7 +41,7 @@
 <script>
 import axios from "@nextcloud/axios";
 import { getCurrentUser } from '@nextcloud/auth'
-import { NcActionButton, NcListItem, NcButton, NcActions } from "@nextcloud/vue";
+import { NcActionButton, NcListItem, NcButton } from "@nextcloud/vue";
 import ArrowCollapseDown from 'vue-material-design-icons/ArrowCollapseDown.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import TrayArrowUp from 'vue-material-design-icons/TrayArrowUp.vue'
@@ -54,7 +52,6 @@ export default {
     NcListItem,
     NcActionButton,
     NcButton,
-    NcActions,
     ArrowCollapseDown,
     Delete,
     TrayArrowUp
@@ -64,34 +61,53 @@ export default {
       type: Number,
       required: true
     },
-    assignedTo: {
-      type: String,
-      required: true
-    },
     owner: {
       type: String,
       required: true
     },
-    shareUser: {
+    assignedTo: {
       type: String,
       required: true
-    }
+    },
+    isOwner: {
+      type: Boolean,
+      required: true
+    },
   },
   data() {
     return {
       file: null,
       files: [],
       user: getCurrentUser(),
-      // shareUser: ''
+      file_id: null,
+      assignedName: '',
+      ownerName: ''
     };
   },
-  mounted() {
+
+  async mounted() {
+    if (this.sharedWorkStatus == 1) {
+      await this.shareFolder()
+      await this.addCreatePermission()
+    }
+    else if (this.sharedWorkStatus != 0) await this.setReadPermission()
+
     this.getFiles();
+    this.assignedName = await this.getFullName(this.assignedTo);
+    this.ownerName = await this.getFullName(this.owner);
+
   },
 
   computed: {
-    shareUser() {
-      return this.user.uid == this.assignedTo ? this.owner : this.assignedTo
+    gridContainerStyle() {
+      if (this.sharedWorkStatus == 1 || this.isOwner) {
+        return '2fr 4fr'
+      }
+      return '1fr'
+    },
+
+    sharedWorkStatus() {
+      return this.$store.state.sharedWorkStatus;
     }
   },
 
@@ -99,34 +115,73 @@ export default {
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
-    handleFileChange(event) {
+    async handleFileChange(event) {
       this.file = event.target.files[0];
-      this.uploadFile();
+      await this.uploadFile()
+      await this.createFile()
+      this.getFiles();
     },
+
+    async shareFolder() {
+      try {
+        const response = await axios.get('/apps/qlcv/share_folder', {
+          params: {
+            work_id: this.workId,
+            owner: this.owner,
+            assigned_to: this.assignedTo
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching files', error);
+      }
+    },
+
+    async setReadPermission() {
+      try {
+        const response = await axios.get('/apps/qlcv/set_read_permission', {
+          params: {
+            work_id: this.workId,
+            owner: this.owner,
+            assigned_to: this.assignedTo
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching files', error);
+      }
+    },
+
+    async addCreatePermission() {
+      try {
+        const response = await axios.get('/apps/qlcv/add_create_permission', {
+          params: {
+            work_id: this.workId,
+            owner: this.owner,
+            assigned_to: this.assignedTo
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching files', error);
+      }
+    },
+
     async getFiles() {
       try {
         const response = await axios.get('/apps/qlcv/get_files', {
           params: {
             work_id: this.workId,
-            share_by: this.shareUser
+            owner: this.owner
           }
         });
         this.files = response.data.files;
-
-        console.log(this.files)
       } catch (error) {
         console.error('Error fetching files', error);
       }
     },
-    async uploadFile() {
-      if (!this.file) {
-        alert('Please select a file.');
-        return;
-      }
 
+    async uploadFile() {
       let formData = new FormData();
       formData.append('file', this.file);
-      formData.append('share_with', this.shareUser);
+      formData.append('owner', this.owner);
       formData.append('work_id', this.workId);
 
       try {
@@ -135,17 +190,22 @@ export default {
             'Content-Type': 'multipart/form-data'
           }
         });
-        console.log('File uploaded successfully', response);
-        this.getFiles(); // Refresh the file list
+        this.file_id = response.data.fileId
       } catch (error) {
         console.error('Error uploading file', error);
-        console.log(this.shareUser);
       }
     },
+
+
     async downloadFile(fileId) {
       try {
-        const response = await axios.get(`/apps/qlcv/download_file/${fileId}/${this.shareUser}`, {
-          responseType: 'blob', // Important for handling the binary data correctly
+        const response = await axios.get(`/apps/qlcv/download_file`, {
+          params: {
+            fileId: fileId,
+            owner: this.owner,
+            work_id: this.workId
+          },
+          responseType: 'blob',
         });
         const contentDisposition = response.headers['content-disposition'];
         let fileName = 'downloaded-file';
@@ -154,8 +214,6 @@ export default {
           if (fileNameMatch.length === 2)
             fileName = fileNameMatch[1];
         }
-        console.log(fileName)
-        // Create a URL for the blob object and trigger the download
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
@@ -166,22 +224,32 @@ export default {
         console.error('Error downloading file', error);
       }
     },
+
+    async createFile() {
+      try {
+        const response = await axios.post('/apps/qlcv/create_file', {
+          work_id: this.workId,
+          file_id: this.file_id
+        });
+      } catch (error) {
+        console.error('Error fetching files', error);
+      }
+    },
+
     async deleteFile(fileId) {
       try {
-        await axios.delete(`/apps/qlcv/delete_file/${fileId}`);
+        await axios.delete(`/apps/qlcv/delete_file/${fileId}/${this.owner}`);
         console.log('File deleted successfully');
-        this.getFiles(); // Refresh the file list
+        this.getFiles();
       } catch (error) {
         console.error('Error deleting file', error);
       }
     },
+
     formatFileSize(size) {
       const units = ['B', 'KB', 'MB', 'GB', 'TB'];
       let unitIndex = 0;
       let fileSize = size;
-
-      console.log(size)
-
       while (fileSize >= 1024 && unitIndex < units.length - 1) {
         fileSize /= 1024;
         unitIndex++;
@@ -189,10 +257,24 @@ export default {
 
       return `${fileSize.toFixed(1)} ${units[unitIndex]}`;
     },
+
     formatDateTime(dateTime) {
-      const date = new Date(dateTime);
+      const date = new Date(dateTime * 1000);
       return date.toLocaleString();
-    }
+    },
+
+    showName(name) {
+      return this.owner == name ? this.ownerName : this.assignedName
+    },
+
+    async getFullName(user_id) {
+      try {
+        const response = await axios.get(`/apps/qlcv/full_name/${user_id}`)
+        return response.data.full_name.full_name
+      } catch (e) {
+        console.error(e)
+      }
+    },
   }
 };
 </script>
@@ -221,19 +303,18 @@ export default {
 
 ul {
   list-style-type: none;
-  margin: 0;
+  margin: 10px;
 }
 
 li {
   margin-bottom: 10px;
-  width: 90%
+  width: 97%
 }
 
 .scrollable-list {
   overflow-y: auto;
   max-height: 480px;
   height: 480px;
-  padding: 10px;
   border: 1px solid #ccc;
   word-wrap: break-word;
 }

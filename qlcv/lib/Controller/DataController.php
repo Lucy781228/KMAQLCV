@@ -25,43 +25,11 @@ class DataController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function countWorksPerProject($user_id)
+    public function countWorksPerProject($userId)
     {
-        $activeProjects = $this->projectAnalystService->getActiveProjects($user_id);
-        $data = [];
-        foreach ($activeProjects as $project) {
-            $workCount = $this->projectAnalystService->countWorksPerProject(
-                $project["project_id"]
-            );
-
-            $data[] = [
-                "project_name" => $project["project_name"],
-                "work_count" => $workCount
-            ];
-
-        }
-        return new JSONResponse(['data' => $data]); 
-    }
-
-    /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     */
-    public function doneWorksPerProject($user_id)
-    {
-        $activeProjects = $this->projectAnalystService->getActiveProjects($user_id);
-        $data = [];
-        foreach ($activeProjects as $project) {
-            $workCount = $this->projectAnalystService->doneWorksPerProject(
-                $project["project_id"]
-            );
-
-            $data[] = [
-                "project_name" => $project["project_name"],
-                "work_count" => $workCount
-            ];
-
-        }
+        $startDate = $this->request->getParam('startDate');
+        $endDate = $this->request->getParam('endDate');
+        $data = $this->projectAnalystService->countWorksPerProject($startDate, $endDate, $userId);
         return new JSONResponse(['data' => $data]); 
     }
 }
