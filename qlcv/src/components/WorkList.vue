@@ -26,13 +26,13 @@
                         :show-trailing-button="searchQuery !== ''" @trailing-button-click="clearText">
                         <Magnify :size="16" />
                     </NcTextField>
-                    <NcButton type="tertiary"
+                    <!-- <NcButton type="tertiary"
                         :to="{ name: 'project-gantt', params: { sharedProjectID: receivedProjectID } }"
                         aria-label="Example text" v-if="isProjectOwner">
                         <template #icon>
                             <ChartGantt :size="20" />
                         </template>
-                    </NcButton>
+                    </NcButton> -->
                     <NcButton type="tertiary" :to="{ name: 'new-work', params: { sharedProjectID: receivedProjectID } }"
                         aria-label="Example text" v-if="isProjectOwner && sharedProjectStatus != 2">
                         <template #icon>

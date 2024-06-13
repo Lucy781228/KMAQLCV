@@ -3,7 +3,7 @@
 		<NcAppNavigation>
 			<template #list>
 				<NcAppNavigationNew text="Thêm dự án" @click="addNewProject" />
-				<NcAppNavigationItem :exact="true" name="Công việc sắp tới" @click="updateValue('Công việc sắp tới')"
+				<NcAppNavigationItem :exact="true" name="Công việc sắp tới" @click="updateTitle('Công việc sắp tới')"
 					to="/">
 					<template #icon>
 						<CalendarAlertOutline :size="20" />
@@ -138,13 +138,13 @@
 					</template>
 				</NcAppNavigationItem>
 			</template>
-			<template #footer>
+			<!-- <template #footer>
 				<NcAppNavigationItem :exact="true" name="Thống kê và báo cáo" @click="" :to="'/analyst'">
 					<template #icon>
 						<Poll :size="20" />
 					</template>
 				</NcAppNavigationItem>
-			</template>
+			</template> -->
 		</NcAppNavigation>
 
 		<NcAppContent class="parent">
@@ -164,7 +164,7 @@
 			</div>
 		</NcModal>
 
-		<NewProject :modal="isAdd" @close="stopModal" :is-edit="isEdit" :project-id="projectId"
+		<NewProject :modal="isAdd" @close="stopModal" :project-id="projectId"
 			:project-name="projectName" :description="description" :status="status" />
 	</NcContent>
 </template>
@@ -220,13 +220,18 @@ export default {
 			doneProjects: [],
 			user: getCurrentUser(),
 			isAdd: false,
-			isEdit: false,
 			isDelete: false,
 			projectId: "",
 			description: "",
 			projectName: "",
 			status: 0
 		};
+	},
+
+	computed: {
+		receivedProjectID() {
+			return this.$store.state.sharedProjectID
+		},
 	},
 
 	mounted() {
@@ -248,7 +253,6 @@ export default {
 			this.$store.commit('updateTitle', name)
 			this.$store.commit('updateProjectOwner', user_id)
 			this.isAdd = true
-			this.isEdit = true
 			this.projectId = id
 			this.projectName = name
 			this.description = description
@@ -257,7 +261,6 @@ export default {
 
 		stopModal() {
 			this.isAdd = false
-			this.isEdit = false
 			this.isDelete = false
 			this.projectId = ""
 			this.description = ""
@@ -266,8 +269,8 @@ export default {
 			this.getProjects()
 		},
 
-		updateValue(itemName) {
-			this.$store.commit('updateValue', itemName);
+		updateTitle(itemName) {
+			this.$store.commit('updateTitle', itemName);
 		},
 
 		updateStore(id, name, user_id, status) {
@@ -292,12 +295,18 @@ export default {
 
 		async deleteProject() {
 			try {
-				const response = await axios.delete(generateUrl('apps/qlcv/delete_project/' + this.projectId))
+				const response = await axios.delete(generateUrl('apps/qlcv/delete_project/' + this.projectId));
+				const deletedProjectId = this.projectId
 				showSuccess(t('qlcv', 'Xóa thành công'));
-				this.stopModal()
-				this.getProjects()
+				this.stopModal();
+				this.getProjects();
+				if (deletedProjectId == this.receivedProjectID) {
+				console.log(this.receivedProjectID)
+					this.$router.push({ name: 'upcoming' })
+				}
+
 			} catch (e) {
-				console.error(e)
+				console.error(e);
 			}
 		}
 

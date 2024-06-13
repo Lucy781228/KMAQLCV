@@ -38,9 +38,14 @@ class ProjectService {
         try {
             $query = $this->db->getQueryBuilder();
     
+            $workAssignedAndStatusCondition = $query->expr()->andX(
+                $query->expr()->eq("w.assigned_to", $query->createNamedParameter($user_id)),
+                $query->expr()->neq("w.status", $query->createNamedParameter(0))
+            );
+    
             $orCondition = $query->expr()->orX(
                 $query->expr()->eq("p.user_id", $query->createNamedParameter($user_id)),
-                $query->expr()->eq("w.assigned_to", $query->createNamedParameter($user_id))
+                $workAssignedAndStatusCondition
             );
     
             $query->selectDistinct("p.*", "w.*")

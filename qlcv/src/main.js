@@ -38,6 +38,7 @@ const router = new VueRouter({
 	base: generateUrl('/apps/qlcv'),
 	routes: [
 		{
+			name: 'upcoming',
 			path: '/',
 			component: UpcomingWorkList,
 		},

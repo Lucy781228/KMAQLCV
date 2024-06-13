@@ -15,16 +15,16 @@ class PredictionService {
     // Hàm để tạo dữ liệu mẫu
     private function generateSampleData() {
         return [
-            ['remaining_tasks' => 5, 'priority' => 2, 'days_until_deadline' => 10, 'remaining_time' => 8.0],
-            ['remaining_tasks' => 10, 'priority' => 1, 'days_until_deadline' => 15, 'remaining_time' => 12.0],
-            ['remaining_tasks' => 7, 'priority' => 2, 'days_until_deadline' => 17, 'remaining_time' => 14.5],
-            ['remaining_tasks' => 8, 'priority' => 1, 'days_until_deadline' => 14, 'remaining_time' => 11.4],
-            ['remaining_tasks' => 12, 'priority' => 1, 'days_until_deadline' => 14, 'remaining_time' => 13.4],
-            ['remaining_tasks' => 6, 'priority' => 3, 'days_until_deadline' => 18, 'remaining_time' => 16.0],
-            ['remaining_tasks' => 15, 'priority' => 1, 'days_until_deadline' => 15, 'remaining_time' => 13.0],
-            ['remaining_tasks' => 9, 'priority' => 2, 'days_until_deadline' => 19, 'remaining_time' => 17.8],
-            ['remaining_tasks' => 11, 'priority' => 1, 'days_until_deadline' => 18, 'remaining_time' => 16.7],
-            ['remaining_tasks' => 14, 'priority' => 1, 'days_until_deadline' => 15, 'remaining_time' => 13.4]
+            ['remaining_tasks' => 5, 'priority' => 2, 'remaining_time' => 8.0],
+            ['remaining_tasks' => 10, 'priority' => 1, 'remaining_time' => 12.0],
+            ['remaining_tasks' => 7, 'priority' => 2, 'remaining_time' => 14.5],
+            ['remaining_tasks' => 8, 'priority' => 1, 'remaining_time' => 11.4],
+            ['remaining_tasks' => 12, 'priority' => 1, 'remaining_time' => 13.4],
+            ['remaining_tasks' => 6, 'priority' => 3, 'remaining_time' => 16.0],
+            ['remaining_tasks' => 15, 'priority' => 1, 'remaining_time' => 13.0],
+            ['remaining_tasks' => 9, 'priority' => 2, 'remaining_time' => 17.8],
+            ['remaining_tasks' => 11, 'priority' => 1, 'remaining_time' => 16.7],
+            ['remaining_tasks' => 14, 'priority' => 1, 'remaining_time' => 13.4]
         ];
     }
 
@@ -32,7 +32,7 @@ class PredictionService {
         $X = [];
         $y = [];
         foreach ($this->data as $row) {
-            $X[] = [1, $row['remaining_tasks'], $row['priority'], $row['days_until_deadline']]; // Thêm 1 cho hệ số chặn (intercept)
+            $X[] = [1, $row['remaining_tasks'], $row['priority']]; // Thêm 1 cho hệ số chặn (intercept)
             $y[] = $row['remaining_time'];
         }
 
@@ -124,10 +124,10 @@ class PredictionService {
     }
 
     // Hàm để dự đoán thời gian còn lại để hoàn thành công việc
-    public function predictRemainingTime(int $remainingTasks, int $priority, int $daysUntilDeadline): float {
+    public function predictRemainingTime(int $remainingTasks, int $priority): float {
         try {
             $coefficients = $this->trainMultipleLinearRegressionModel();
-            $predictedRemainingTime = $coefficients[0] + $coefficients[1] * $remainingTasks + $coefficients[2] * $priority + $coefficients[3] * $daysUntilDeadline;
+            $predictedRemainingTime = $coefficients[0] + $coefficients[1] * $remainingTasks + $coefficients[2] * $priority;
             return round($predictedRemainingTime, 2);
         } catch (Exception $e) {
             throw new Exception("ERROR: " . $e->getMessage());

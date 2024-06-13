@@ -1,6 +1,6 @@
 <template>
-    <NcModal v-if="modal" :canClose="full_name" @close="closeModal" size="small">
-        <div v-if="full_name" class="modal__content">
+    <NcModal v-if="modal" :canClose="isView" @close="closeModal" size="small">
+        <div v-if="isView" class="modal__content">
             <div class="modal-title">{{ projectName }}</div>
             <div class="grid-view">
                 <div class="grid-item">
@@ -22,10 +22,10 @@
                     <input type="text" v-model="projectName" @blur="handleFieldFocus('project_name')" />
                     <div class="validation-error-container">
                         <span class="validation-error"
-                            v-if="!isEdit && touchedFields.project_name && !validation.requiredString(projectName)">
+                            v-if="!projectId && touchedFields.project_name && !validation.requiredString(projectName)">
                             Không được để trống
                         </span>
-                        <span class="validation-error" v-if="isEdit && !validation.requiredString(projectName)">
+                        <span class="validation-error" v-if="projectId && !validation.requiredString(projectName)">
                             Không được để trống
                         </span>
                     </div>
@@ -40,7 +40,7 @@
                 <NcButton type="secondary" @click="closeModal">
                     Hủy
                 </NcButton>
-                <NcButton v-if="isEdit" @click="updateProject" type="primary" :disabled="!isFormValid">
+                <NcButton v-if="projectId" @click="updateProject" type="primary" :disabled="!isFormValid">
                     Cập nhật
                 </NcButton>
                 <NcButton v-else @click="createProject" type="primary" :disabled="!isFormValid">
@@ -79,10 +79,6 @@ export default {
             type: String,
             default: ""
         },
-        isEdit: {
-            type: Boolean,
-            default: false
-        },
         status: {
             type: Number,
             default: 0
@@ -92,6 +88,10 @@ export default {
             default: ""
         },
     },
+
+    mounted() {
+
+    },
     data() {
         return {
             touchedFields: {
@@ -100,24 +100,7 @@ export default {
             isValidDate: true,
             user: getCurrentUser(),
             full_name: null,
-            isView: false
         };
-    },
-
-    watch: {
-        modal: {
-            handler(newVal, oldVal) {
-                if (newVal != oldVal) {
-                    if (this.receivedUserID != this.user.uid) {
-                        this.getFullName()
-                    }
-                }
-            },
-            immediate: true
-        },
-    },
-
-    mounted() {
     },
 
     computed: {
@@ -126,10 +109,19 @@ export default {
         },
 
         getTitle() {
-            return this.isEdit ? 'CẬP NHẬT DỰ ÁN' : 'THÊM DỰ ÁN'
+            return this.projectId ? 'CẬP NHẬT DỰ ÁN' : 'THÊM DỰ ÁN'
         },
+
         validation() {
             return validation;
+        },
+
+        isView() {
+            if (this.projectId && this.receivedUserID != this.user.uid) {
+                this.getFullName()
+                return true
+            }
+            return false
         },
 
         isFormValid() {
@@ -142,6 +134,7 @@ export default {
         closeModal() {
             this.touchedFields.project_name = false
             this.isValidDate = true
+            this.full_name = null
             this.$emit('close');
         },
 
@@ -158,14 +151,6 @@ export default {
                     });
                 }
             }
-        },
-
-        mysqlDateFormatter(date) {
-            if (!date) return '';
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            return `${year}-${month}-${day}`;
         },
 
         async createProject() {
@@ -203,18 +188,11 @@ export default {
                 try {
                     const response = await axios.get(generateUrl(`/apps/qlcv/full_name/${this.receivedUserID}`))
                     this.full_name = response.data.full_name.full_name
-                    console.log(this.full_name)
 
                 } catch (e) {
                     console.error(e)
                 }
             }
-        },
-
-        formatDateToDDMMYYYY(inputDate) {
-            if (!inputDate) return 'Không';
-            const parts = inputDate.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
         },
     }
 };
