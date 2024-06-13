@@ -17,7 +17,7 @@
                     </div>
                 </div>
                 <div class="grid-item-b">
-                    <label>Nhãn</label>
+                    <label>Nhãn (*)</label>
                     <NcMultiselect ref="label" class="nc-select" v-model="work.label" :options="labels" label="text"
                         placeholder="Chọn một tùy chọn" track-by="text" />
                 </div>
@@ -224,13 +224,6 @@ export default {
             return true;
         },
 
-        formatDateToDDMMYYYY(inputDate) {
-            if (inputDate) {
-                const parts = inputDate.split('-');
-                return `${parts[2]}/${parts[1]}/${parts[0]}`;
-            }
-        },
-
         attachBlurListener(componentRef, fieldName) {
             if (componentRef && componentRef.$el) {
                 const input = componentRef.$el.querySelector('input');
@@ -274,14 +267,6 @@ export default {
             });
         },
 
-        mysqlDateFormatter(date) {
-            if (!date) return '';
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        },
-
         async createWork() {
             try {
                 const status = this.work.start_date <= new Date().setHours(0, 0, 0, 0) ? 1 : 0
@@ -289,15 +274,14 @@ export default {
                     project_id: this.receivedProjectID,
                     work_name: this.work.work_name,
                     description: this.work.description,
-                    start_date: this.mysqlDateFormatter(this.work.start_date),
-                    end_date: this.mysqlDateFormatter(this.work.end_date),
+                    start_date: Math.floor(new Date(this.work.start_date).getTime()/1000),
+                    end_date: Math.floor(new Date(this.work.end_date).getTime()/1000),
                     label: this.work.label.text,
                     assigned_to: this.work.assigned_to.userId,
                     contents: this.tasks,
                     owner: this.user.uid,
                     status: status
                 });
-
                 if (status == 1 && this.sharedProjectStatus == 0) this.updateProject()
 
                 showSuccess("Tạo thành công.")

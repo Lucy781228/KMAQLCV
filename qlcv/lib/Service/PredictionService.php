@@ -3,124 +3,132 @@ declare(strict_types=1);
 
 namespace OCA\QLCV\Service;
 
-use OCP\IDBConnection;
 use Exception;
 
 class PredictionService {
-    private $db;
-    private $projectAnalystService;
-    private $beta0;
-    private $beta1;
+    private $data;
 
-    public function __construct(IDBConnection $db, ProjectAnalystService $projectAnalystService) {
-        $this->db = $db;
-        $this->projectAnalystService = $projectAnalystService;
+    public function __construct() {
+        $this->data = $this->generateSampleData();
     }
 
-    private function calculateRegressionCoefficients($project_id) {
-        try {
-            $data = $this->getHistoricalData($project_id);
+    // Hàm để tạo dữ liệu mẫu
+    private function generateSampleData() {
+        return [
+            ['remaining_tasks' => 5, 'priority' => 2, 'days_until_deadline' => 10, 'remaining_time' => 8.0],
+            ['remaining_tasks' => 10, 'priority' => 1, 'days_until_deadline' => 15, 'remaining_time' => 12.0],
+            ['remaining_tasks' => 7, 'priority' => 2, 'days_until_deadline' => 17, 'remaining_time' => 14.5],
+            ['remaining_tasks' => 8, 'priority' => 1, 'days_until_deadline' => 14, 'remaining_time' => 11.4],
+            ['remaining_tasks' => 12, 'priority' => 1, 'days_until_deadline' => 14, 'remaining_time' => 13.4],
+            ['remaining_tasks' => 6, 'priority' => 3, 'days_until_deadline' => 18, 'remaining_time' => 16.0],
+            ['remaining_tasks' => 15, 'priority' => 1, 'days_until_deadline' => 15, 'remaining_time' => 13.0],
+            ['remaining_tasks' => 9, 'priority' => 2, 'days_until_deadline' => 19, 'remaining_time' => 17.8],
+            ['remaining_tasks' => 11, 'priority' => 1, 'days_until_deadline' => 18, 'remaining_time' => 16.7],
+            ['remaining_tasks' => 14, 'priority' => 1, 'days_until_deadline' => 15, 'remaining_time' => 13.4]
+        ];
+    }
 
-            // Tính toán các giá trị trung bình
-            $n = count($data);
-            $sumX = 0;
-            $sumY = 0;
-            $sumXY = 0;
-            $sumX2 = 0;
-
-            foreach ($data as $row) {
-                $x = $row['task_count'];
-                $y = $row['duration'];
-                $sumX += $x;
-                $sumY += $y;
-                $sumXY += $x * $y;
-                $sumX2 += $x * $x;
-            }
-
-            $meanX = $sumX / $n;
-            $meanY = $sumY / $n;
-
-            // Tính toán các hệ số hồi quy
-            $this->beta1 = ($sumXY - $n * $meanX * $meanY) / ($sumX2 - $n * $meanX * $meanX);
-            $this->beta0 = $meanY - $this->beta1 * $meanX;
-        } catch (Exception $e) {
-            throw new Exception("ERROR: " . $e->getMessage());
+    private function trainMultipleLinearRegressionModel() {
+        $X = [];
+        $y = [];
+        foreach ($this->data as $row) {
+            $X[] = [1, $row['remaining_tasks'], $row['priority'], $row['days_until_deadline']]; // Thêm 1 cho hệ số chặn (intercept)
+            $y[] = $row['remaining_time'];
         }
+
+        // Chuyển đổi mảng thành ma trận
+        $X = $this->arrayToMatrix($X);
+        $y = $this->arrayToMatrix($y, true);
+
+        // Tính toán hệ số hồi quy tuyến tính đa biến
+        $X_transpose = $this->transposeMatrix($X);
+        $X_transpose_X = $this->multiplyMatrices($X_transpose, $X);
+        $X_transpose_y = $this->multiplyMatrices($X_transpose, $y);
+        $coefficients = $this->solveLinearSystem($X_transpose_X, $X_transpose_y);
+
+        return $coefficients;
     }
 
-    public function predictCompletionTime($project_id) {
-        try {
-            $this->calculateRegressionCoefficients($project_id);
-
-            $query = $this->db->getQueryBuilder();
-            $query->select("work_id")
-                  ->from("qlcv_work")
-                  ->where($query->expr()->eq("project_id", $query->createNamedParameter($project_id)))
-                  ->andWhere($query->expr()->eq("status", $query->createNamedParameter(1)));
-
-            $result = $query->execute();
-            $workIds = $result->fetchAll();
-
-            $predictions = [];
-            foreach ($workIds as $row) {
-                $work_id = $row['work_id'];
-                $taskCount = $this->countTaskPerWork($work_id, 0);
-                $predictedDuration = $this->beta0 + $this->beta1 * $taskCount;
-                $predictions[] = [
-                    'work_id' => $work_id,
-                    'predicted_duration' => $predictedDuration
-                ];
+    // Hàm để chuyển đổi mảng thành ma trận
+    private function arrayToMatrix(array $array, bool $isColumnVector = false) {
+        $matrix = [];
+        if ($isColumnVector) {
+            foreach ($array as $value) {
+                $matrix[] = [$value];
             }
-
-            return $predictions;
-        } catch (Exception $e) {
-            throw new Exception("ERROR: " . $e->getMessage());
+        } else {
+            $matrix = $array;
         }
+        return $matrix;
     }
 
-    private function countTaskPerWork($work_id, $is_done) {
-        try {
-            $query = $this->db->getQueryBuilder();
-            $query->select($query->func()->count('*', 'task_count'))
-                  ->from("qlcv_task")
-                  ->where($query->expr()->eq("work_id", $query->createNamedParameter($work_id)))
-                  ->andWhere($query->expr()->eq("is_done", $query->createNamedParameter($is_done)));
-    
-            $result = $query->execute();
-            $taskCount = $result->fetchColumn();
-    
-            return $taskCount;
-        } catch (Exception $e) {
-            throw new Exception("ERROR: " . $e->getMessage());
-        }
+    // Hàm để chuyển vị ma trận
+    private function transposeMatrix(array $matrix) {
+        return array_map(null, ...$matrix);
     }
 
-    private function getHistoricalData($project_id) {
-        try {
-            $query = $this->db->getQueryBuilder();
-            $query->select("duration", "work_id")
-                  ->from("qlcv_work")
-                  ->where($query->expr()->eq("project_id", $query->createNamedParameter($project_id)))
-                  ->andWhere($query->expr()->eq("status", $query->createNamedParameter(3)));
-
-            $result = $query->execute();
-            $data = $result->fetchAll();
-
-            $historicalData = [];
-
-            foreach ($data as $row) {
-                $work_id = $row['work_id'];
-                $duration = $row['duration'];
-                $taskCount = $this->countTaskPerWork($work_id, 1);
-
-                $historicalData[] = [
-                    'work_id' => $work_id,
-                    'duration' => $duration,
-                    'task_count' => $taskCount
-                ];
+    // Hàm để nhân hai ma trận
+    private function multiplyMatrices(array $matrixA, array $matrixB) {
+        $result = [];
+        for ($i = 0; $i < count($matrixA); $i++) {
+            for ($j = 0; $j < count($matrixB[0]); $j++) {
+                $result[$i][$j] = 0;
+                for ($k = 0; $k < count($matrixB); $k++) {
+                    $result[$i][$j] += $matrixA[$i][$k] * $matrixB[$k][$j];
+                }
             }
+        }
+        return $result;
+    }
 
-            return $historicalData;
+    // Hàm để giải hệ phương trình tuyến tính sử dụng phương pháp Gauss-Jordan
+    private function solveLinearSystem(array $A, array $b) {
+        $n = count($A);
+        for ($i = 0; $i < $n; $i++) {
+            $A[$i][] = $b[$i][0];
+        }
+
+        for ($i = 0; $i < $n; $i++) {
+            $max = $i;
+            for ($j = $i + 1; $j < $n; $j++) {
+                if (abs($A[$j][$i]) > abs($A[$max][$i])) {
+                    $max = $j;
+                }
+            }
+            $temp = $A[$i];
+            $A[$i] = $A[$max];
+            $A[$max] = $temp;
+
+            $temp = $b[$i][0];
+            $b[$i][0] = $b[$max][0];
+            $b[$max][0] = $temp;
+
+            for ($j = $i + 1; $j < $n; $j++) {
+                $factor = $A[$j][$i] / $A[$i][$i];
+                for ($k = $i; $k <= $n; $k++) {
+                    $A[$j][$k] -= $factor * $A[$i][$k];
+                }
+            }
+        }
+
+        $x = array_fill(0, $n, 0);
+        for ($i = $n - 1; $i >= 0; $i--) {
+            $sum = 0;
+            for ($j = $i + 1; $j < $n; $j++) {
+                $sum += $A[$i][$j] * $x[$j];
+            }
+            $x[$i] = ($A[$i][$n] - $sum) / $A[$i][$i];
+        }
+
+        return $x;
+    }
+
+    // Hàm để dự đoán thời gian còn lại để hoàn thành công việc
+    public function predictRemainingTime(int $remainingTasks, int $priority, int $daysUntilDeadline): float {
+        try {
+            $coefficients = $this->trainMultipleLinearRegressionModel();
+            $predictedRemainingTime = $coefficients[0] + $coefficients[1] * $remainingTasks + $coefficients[2] * $priority + $coefficients[3] * $daysUntilDeadline;
+            return round($predictedRemainingTime, 2);
         } catch (Exception $e) {
             throw new Exception("ERROR: " . $e->getMessage());
         }

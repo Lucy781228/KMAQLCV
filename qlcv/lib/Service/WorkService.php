@@ -23,7 +23,7 @@ class WorkService
         IDBConnection $db,
         TaskService $taskService,
         ProjectService $projectService,
-        NotificationManager $notificationManager,
+        NotificationManager $notificationManager
     ) {
         $this->db = $db;
         $this->taskService = $taskService;
@@ -40,11 +40,12 @@ class WorkService
             $query
                 ->select("w.*", "p.project_name")
                 ->from("qlcv_work", "w")
-                ->join("w", "qlcv_project", "p", "w.project_id = p.project_id");
-
+                ->join("w", "qlcv_project", "p", "w.project_id = p.project_id")
+                ->where("w.status = 1");
+    
             $result = $query->execute();
             $data = $result->fetchAll();
-
+    
             return $data;
         } catch (Exception $e) {
             throw new Exception("ERROR: " . $e->getMessage());
@@ -223,14 +224,17 @@ class WorkService
                         ->expr()
                         ->eq(
                             "project_id",
-                            $query->createNamedParameter(
-                                $work["project_id"]
-                            )
+                            $query->createNamedParameter($work["project_id"])
                         )
                 );
             $project = $query->execute()->fetch();
 
-            return ["status" => "success", "isProjectDone" => $result, "work_name" => $work["work_name"], "project_name" => $project["project_name"]];
+            return [
+                "status" => "success",
+                "isProjectDone" => $result,
+                "work_name" => $work["work_name"],
+                "project_name" => $project["project_name"],
+            ];
         } catch (\Exception $e) {
             throw new Exception("ERROR: " . $e->getMessage());
         }
@@ -257,6 +261,10 @@ class WorkService
 
     public function calculateDaysToDeadline($workId)
     {
+        $today = new DateTime();
+        $today->setTime(0, 0);
+        $todayTimestamp = $today->getTimestamp();
+
         try {
             $query = $this->db->getQueryBuilder();
             $query
@@ -270,11 +278,7 @@ class WorkService
 
             $result = $query->execute();
             $work = $result->fetch();
-            $endDate = new DateTime($work["end_date"]);
-            $today = new DateTime();
-            $interval = $today->diff($endDate);
-
-            return $interval->format("%r%a");
+            return $work["end_date"] - $todayTimestamp;
         } catch (Exception $e) {
             throw new Exception(
                 "Lỗi khi tính toán ngày đến hạn của công việc: " .
@@ -286,26 +290,26 @@ class WorkService
     public function setDoingWork()
     {
         $today = new DateTime();
-        $todayDate = $today->format("Y-m-d");
-        $updatedWorks = [];
+        $today->setTime(0, 0);
+        $todayTimestamp = $today->getTimestamp();
 
         try {
             $query = $this->db->getQueryBuilder();
             $query
-                ->select("work_id")
+                ->select("work_id", "project_id")
                 ->from("qlcv_work")
                 ->where(
                     $query
                         ->expr()
                         ->eq(
                             "start_date",
-                            $query->createNamedParameter($todayDate)
+                            $query->createNamedParameter($todayTimestamp)
                         )
                 )
                 ->andWhere(
                     $query
                         ->expr()
-                        ->neq("status", $query->createNamedParameter(1))
+                        ->eq("status", $query->createNamedParameter(0))
                 );
 
             $result = $query->execute();
@@ -322,8 +326,10 @@ class WorkService
                         null,
                         null,
                         1,
-                        null
+                        $work["project_id"]
                     );
+
+                    $this->projectService->setDoingProject($work["project_id"]);
                     $query = $this->db->getQueryBuilder();
                     $query
                         ->select("project_name")
@@ -341,13 +347,60 @@ class WorkService
 
                     $result = $query->execute();
                     $project = $result->fetch();
-                    $this->notificationHelper->notifyNewWork($work["assigned_to"], $project["project_name"], $work["work_name"]);
+                    $this->notificationHelper->notifyNewWork(
+                        $work["assigned_to"],
+                        $project["project_name"],
+                        $work["work_name"]
+                    );
                 }
             }
 
             return $works;
         } catch (Exception $e) {
             throw new Exception("ERROR: " . $e->getMessage());
+        }
+    }
+
+    public function getUpcomingWorks($assigned_to)
+    {
+        try {
+            $today = new DateTime();
+            $today->setTime(0, 0);
+            $todayTimestamp = $today->getTimestamp();
+
+            $query = $this->db->getQueryBuilder();
+            $query
+                ->select("*")
+                ->from("qlcv_work")
+                ->where(
+                    $query
+                        ->expr()
+                        ->eq(
+                            "assigned_to",
+                            $query->createNamedParameter($assigned_to)
+                        )
+                )
+                ->andWhere(
+                    $query
+                        ->expr()
+                        ->eq("status", $query->createNamedParameter(1))
+                )
+                ->andWhere(
+                    $query
+                    ->expr()
+                    ->lte(
+                        "end_date",
+                        $query->createNamedParameter(
+                            $todayTimestamp + 30 * 24 * 60 * 60
+                        )
+                    )
+                );
+
+            $result = $query->execute();
+
+            return $result->fetchAll();
+        } catch (\Exception $e) {
+            throw new \Exception("ERROR: " . $e->getMessage());
         }
     }
 }

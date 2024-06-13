@@ -112,20 +112,23 @@ class Version1000Date20240419163545 extends SimpleMigrationStep
                 "unsigned" => true,
                 "default" => 0
             ]);
-            $table->addColumn("start_date", "date", [
+            $table->addColumn("start_date", "integer", [
                 "notnull" => true,
+                "unsigned" => true,
             ]);
-            $table->addColumn("end_date", "date", [
+            $table->addColumn("end_date", "integer", [
                 "notnull" => true,
+                "unsigned" => true,
             ]);
-            $table->addColumn("actual_end_date", "date", [
+            $table->addColumn("actual_end_date", "integer", [
                 "notnull" => false,
+                "unsigned" => true,
             ]);
             $table->addColumn("is_returned", "boolean", [
                 "notnull" => false,
             ]);
             $table->addColumn("label", "string", [
-                "notnull" => false,
+                "notnull" => true,
                 "length" => 64,
             ]);
             $table->addColumn("assigned_to", "string", [
@@ -159,6 +162,10 @@ class Version1000Date20240419163545 extends SimpleMigrationStep
             ]);
             $table->addColumn("is_done", "boolean", [
                 "notnull" => false,
+            ]);
+            $table->addColumn("complete_on", "integer", [
+                "notnull" => false,
+                "unsigned" => true,
             ]);
             $table->setPrimaryKey(["task_id"]);
             $table->addIndex(['work_id'], 'work_index');

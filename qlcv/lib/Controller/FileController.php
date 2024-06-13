@@ -117,16 +117,27 @@ class FileController extends Controller
     public function setReadPermission($work_id, $assigned_to, $owner)
     {
         try {
+            $user = $this->userSession->getUser();
+            $currentUserId = $user->getUID();
+
             $this->authorizationService->hasAccessWork($work_id);
             $userFolder = $this->rootFolder->getUserFolder($owner);
             $qlcvFolder = $userFolder->get("QLCV");
 
             if ($qlcvFolder->nodeExists($work_id)) {
                 $workFolder = $qlcvFolder->get($work_id);
-                $shares = $this->shareManager->getSharesBy(
-                    $owner,
-                    IShare::TYPE_USER
-                );
+                if ($currentUserId !== $owner) {
+                    $shares = $this->shareManager->getSharesBy(
+                        $owner,
+                        IShare::TYPE_USER
+                    );
+                }
+                else {
+                    $shares = $this->shareManager->getSharedWith(
+                        $assigned_to,
+                        IShare::TYPE_USER
+                    );
+                }
                 foreach ($shares as $share) {
                     if (
                         $share->getNode()->getId() === $workFolder->getId() &&
@@ -161,15 +172,26 @@ class FileController extends Controller
     public function addCreatePermission($work_id, $assigned_to, $owner)
     {
         try {
+            $user = $this->userSession->getUser();
+            $currentUserId = $user->getUID();
+
             $this->authorizationService->hasAccessWork($work_id);
             $userFolder = $this->rootFolder->getUserFolder($owner);
             $qlcvFolder = $userFolder->get("QLCV");
             if ($qlcvFolder->nodeExists($work_id)) {
                 $workFolder = $qlcvFolder->get($work_id);
-                $shares = $this->shareManager->getSharesBy(
-                    $owner,
-                    IShare::TYPE_USER
-                );
+                if ($currentUserId !== $owner) {
+                    $shares = $this->shareManager->getSharesBy(
+                        $owner,
+                        IShare::TYPE_USER
+                    );
+                }
+                else {
+                    $shares = $this->shareManager->getSharedWith(
+                        $assigned_to,
+                        IShare::TYPE_USER
+                    );
+                }
                 foreach ($shares as $share) {
                     if (
                         $share->getNode()->getId() === $workFolder->getId() &&

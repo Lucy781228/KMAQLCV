@@ -52,6 +52,7 @@ return [
         ['name' => 'Work#getWorkById', 'url' => '/work_by_id/{work_id}', 'verb' => 'GET'],
         ['name' => 'Work#updateWork', 'url' => '/update_work', 'verb' => 'PUT'],
         ['name' => 'Work#deleteWork', 'url' => '/delete_work/{work_id}', 'verb' => 'DELETE'],
+        ['name' => 'Work#getUpcomingWorks', 'url' => '/upcoming_works', 'verb' => 'GET'],
 
         // Comment
         ['name' => 'Comment#createComment', 'url' => '/create_comment', 'verb' => 'POST'],

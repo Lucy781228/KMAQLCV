@@ -80,7 +80,7 @@ class Notifier implements INotifier
 
             case "rename-work":
                 $notification->setParsedSubject(
-                    $l->t("Dự án [%s]: Công việc [%s] được đổi tên thành [%s].", [
+                    $l->t("Dự án \"%s\: Công việc \"%s\ được đổi tên thành \"%s\.", [
                         $params[0],
                         $params[1],
                         $params[2]

@@ -34,7 +34,7 @@
                         </template>
                     </NcButton>
                     <NcButton type="tertiary" :to="{ name: 'new-work', params: { sharedProjectID: receivedProjectID } }"
-                        aria-label="Example text" v-if="isProjectOwner">
+                        aria-label="Example text" v-if="isProjectOwner && sharedProjectStatus != 2">
                         <template #icon>
                             <Plus :size="20" />
                         </template>
@@ -47,7 +47,7 @@
                 </div>
             </div>
         </div>
-        <div class="grid-row">
+        <div class="grid-row" v-if="sharedProjectStatus == 1">
             <div class="grid-column" v-for="status in [0, 1, 2, 3]" :key="status">
                 <router-link
                     :to="{ name: 'work', params: { sharedProjectID: receivedProjectID, workId: work.work_id } }"
@@ -57,6 +57,15 @@
                         :is-project-owner="isProjectOwner" @update="getWorks" />
                 </router-link>
             </div>
+        </div>
+        <div class="grid-row" v-else>
+            <router-link v-for="work in works" :key="work.work_id"
+                :to="{ name: 'work', params: { sharedProjectID: receivedProjectID, workId: work.work_id } }"
+                class="work-item">
+                <Work :work-name="work.work_name" :label="work.label" :assigned-to="work.assigned_to"
+                    :status="work.status" :work-id="work.work_id" @delete="showModal" :end-date="work.end_date"
+                    :is-project-owner="isProjectOwner" @update="getWorks" />
+            </router-link>
         </div>
         <router-view @back-to-worklist="getWorks" />
 

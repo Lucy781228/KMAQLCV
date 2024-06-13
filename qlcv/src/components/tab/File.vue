@@ -86,12 +86,10 @@ export default {
   },
 
   async mounted() {
-    if (this.sharedWorkStatus == 1) {
+    if (this.sharedWorkStatus == 1 && this.owner != this.assignedTo) {
       await this.shareFolder()
       await this.addCreatePermission()
     }
-    else if (this.sharedWorkStatus != 0) await this.setReadPermission()
-
     this.getFiles();
     this.assignedName = await this.getFullName(this.assignedTo);
     this.ownerName = await this.getFullName(this.owner);
@@ -108,6 +106,20 @@ export default {
 
     sharedWorkStatus() {
       return this.$store.state.sharedWorkStatus;
+    }
+  },
+
+  watch: {
+    'sharedWorkStatus'(newStatus) {
+      if (this.owner != this.assignedTo && newStatus != 0) {
+        if (newStatus == 1) {
+          this.addCreatePermission()
+        }
+        else if (newStatus != 0) {
+          this.setReadPermission()
+        }
+      }
+      console.log('sharedWorkStatus changed to: ', newStatus);
     }
   },
 

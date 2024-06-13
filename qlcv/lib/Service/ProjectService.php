@@ -99,6 +99,10 @@ class ProjectService {
         }
     }
 
+    public function setDoingProject($project_id) {
+        $this->updateProject($project_id, null, null, null, 1);
+    }
+
     public function deleteProject($project_id) {
         try {
             $query = $this->db->getQueryBuilder();
@@ -149,8 +153,5 @@ class ProjectService {
         } else {
             return false;
         }
-    }
-
-    public function setDoingProject() {
     }
 }

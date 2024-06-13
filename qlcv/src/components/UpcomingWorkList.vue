@@ -1,14 +1,8 @@
 <template>
-    <div class="work-list">
+    <div class="work-list" v-if="isDataReady">
         <div class="header">
             <div class="first-header">
                 <h2>{{ receivedTitle }}</h2>
-                <div class="search-and-add">
-                    <NcTextField :value.sync="searchQuery" label="Nhập tên công việc" trailing-button-icon="close"
-                        :show-trailing-button="searchQuery !== ''" @trailing-button-click="clearText">
-                        <Magnify :size="16" />
-                    </NcTextField>
-                </div>
             </div>
             <div class="second-header">
                 <div class="grid-column-header" v-for="status in [0, 1, 2, 3]" :key="status">
@@ -16,30 +10,19 @@
                 </div>
             </div>
         </div>
-        <!-- <div class="grid-row">
-            <div class="grid-column" v-for="status in [0, 1, 2, 3]" :key="status">
-                <router-link
-                    :to="{ name: 'work', params: { sharedProjectID: receivedProjectID, workId: work.work_id } }"
-                    class="work-item" v-for="work in filteredWorksByStatus(status)" :key="work.work_id">
-                    <Work :work-name="work.work_name" :label="work.label" :assigned-to="work.assigned_to"
-                        :work-id="work.work_id" @delete="showModal" :end-date="work.end_date" :is-project-owner="isProjectOwner"/>
-                </router-link>
-            </div>
-        </div> -->
-        <router-view @back-to-worklist="getWorks" />
-        <NcModal :show="isDelete" :canClose="false" size="small">
-            <div class="modal__content">
-                <h3>Bạn chắc chắn không?</h3>
-                <div class="modal__actions">
-                    <NcButton @click="stopModal" type="primary" aria-label="Example text">
-                        Hủy
-                    </NcButton>
-                    <NcButton @click="deleteWork" type="secondary" aria-label="Example text">
-                        Xóa
-                    </NcButton>
+        <div class="grid-row">
+            <div class="grid-column" v-for="(works, index) in filteredWorks" :key="index">
+                <div v-for="work in works" :key="work.work_id" class="work-item">
+                    <router-link
+                        :to="{ name: 'work', params: { sharedProjectID: receivedProjectID, workId: work.work_id } }">
+                        <Work :work-name="work.work_name" :label="work.label" :assigned-to="work.assigned_to"
+                            :work-id="work.work_id" @delete="showModal" :end-date="work.end_date"
+                            :is-project-owner="false" />
+                    </router-link>
                 </div>
             </div>
-        </NcModal>
+        </div>
+        <router-view @back-to-worklist="getWorks" />
     </div>
 </template>
 
@@ -72,16 +55,10 @@ export default {
     data() {
         return {
             works: [],
-            columnHeaders: ['TRƯỚC ĐÓ', 'HÔM NAY', '7 NGÀY TỚI', '30 NGÀY TỚI'],
+            columnHeaders: ['TRƯỚC ĐÓ', 'CÒN 1 NGÀY', 'CÒN 7 NGÀY', 'CÒN 30 NGÀY'],
             user: getCurrentUser(),
-            searchQuery: '',
+            isDataReady: false,
             filteredWorks: [],
-            modal: false,
-            work: null,
-            showGantt: false,
-            isDelete: false,
-            workId: 0,
-            showEmpty: true
         };
     },
 
@@ -101,87 +78,52 @@ export default {
             return this.$route.name !== 'project';
         },
         isProjectOwner() {
-            return this.user.uid==this.receivedUserID;
+            return this.user.uid == this.receivedUserID;
         }
     },
 
     mounted() {
-    },
-
-    watch: {
-        receivedProjectID: {
-            immediate: true,
-            handler(newVal) {
-                if (newVal && this.receivedProjectID) {
-                    this.getWorks();
-                }
-            }
-        },
-        searchQuery(newQuery) {
-            if (this.searchQuery) {
-                this.filteredWorks = this.works.filter(work => {
-                    return work.work_name.toLowerCase().includes(newQuery.toLowerCase());
-                });
-            } else this.filteredWorks = this.works
-        }
+        this.getUpcomingWorks()
     },
 
     methods: {
-        filteredWorksByStatus(status) {
-            return this.filteredWorks.filter(work => work.status === status);
-        },
-
         clearText() {
             this.searchQuery = ''
         },
 
-        async getWorks() {
+        async getUpcomingWorks() {
             try {
-                const response = await axios.get(generateUrl('/apps/qlcv/works'), {
-                    params: {
-                        project_id: this.receivedProjectID,
-                        user_id: this.receivedUserID,
-                        assigned_to: this.user.uid
-                    }
-                });
-                this.works = response.data.works;
-                this.filteredWorks = JSON.parse(JSON.stringify(this.works));
-                this.showEmpty = false
+                const response = await axios.get(generateUrl('/apps/qlcv/upcoming_works'));
+                console.log(response);
+                const { currentTimestamp, oneDayAhead, sevenDaysAhead } = this.calculateTimestamps();
 
+                if (response.data && response.data.works) {
+                    this.filteredWorks = [0, 1, 2, 3].map((type) => {
+                        switch (type) {
+                            case 0: return response.data.works.filter(work => work.end_date <= currentTimestamp);
+                            case 1: return response.data.works.filter(work => work.end_date === oneDayAhead);
+                            case 2: return response.data.works.filter(work => work.end_date > oneDayAhead && work.end_date < sevenDaysAhead);
+                            case 3: return response.data.works.filter(work => work.end_date >= sevenDaysAhead);
+                            default: return [];
+                        }
+                    });
+                }
+                console.log(this.filteredWorks)
+                this.isDataReady = true;
             } catch (e) {
-                console.error(e)
+                console.error(e);
             }
         },
 
-        async getWork(id) {
-            try {
-                const response = await axios.get(generateUrl(`/apps/qlcv/work_by_id/${id}`));
-                this.work = response.data.work
-
-            } catch (e) {
-                console.error(e)
-            }
+        calculateTimestamps() {
+            const today = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000);
+            const oneDay = 24 * 60 * 60;
+            return {
+                currentTimestamp: today,
+                oneDayAhead: today + oneDay,
+                sevenDaysAhead: today + (7 * oneDay),
+            };
         },
-
-        async deleteWork() {
-            try {
-                const response = await axios.delete(generateUrl('apps/qlcv/delete_work/' + this.workId))
-                showSuccess(t('qlcv', 'Xóa thành công'));
-                this.stopModal()
-                this.getWorks()
-            } catch (e) {
-                console.error(e)
-            }
-        },
-
-        showModal(workId) {
-            this.isDelete = true
-            this.workId = workId
-        },
-
-        stopModal() {
-            this.isDelete = false
-        }
     }
 }
 </script>

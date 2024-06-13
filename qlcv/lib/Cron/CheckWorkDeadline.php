@@ -38,9 +38,9 @@ class CheckWorkDeadline extends TimedJob {
         
         //             if ($daysToDeadline === 0) {
         //                 $this->notificationHelper->notifyDueWork($work['assigned_to'], $work['project_name'], $work['work_name']);
-        //             } elseif ($daysToDeadline === 7) {
+        //             } elseif ($daysToDeadline === 7*60*60*24) {
         //                 $this->notificationHelper->notify7dayWork($work['assigned_to'], $work['project_name'], $work['work_name']);
-        //             } elseif ($daysToDeadline === 30) {
+        //             } elseif ($daysToDeadline === 30*60*60*24) {
         //                 $this->notificationHelper->notify30dayWork($work['assigned_to'], $work['project_name'], $work['work_name']);
         //             }
         //         }
@@ -56,9 +56,9 @@ class CheckWorkDeadline extends TimedJob {
     
                 if ($daysToDeadline === 0) {
                     $this->notificationHelper->notifyDueWork($work['assigned_to'], $work['project_name'], $work['work_name']);
-                } elseif ($daysToDeadline === 7) {
+                } elseif ($daysToDeadline === 7*60*60*24) {
                     $this->notificationHelper->notify7dayWork($work['assigned_to'], $work['project_name'], $work['work_name']);
-                } elseif ($daysToDeadline === 30) {
+                } elseif ($daysToDeadline === 30*60*60*24) {
                     $this->notificationHelper->notify30dayWork($work['assigned_to'], $work['project_name'], $work['work_name']);
                 }
             }

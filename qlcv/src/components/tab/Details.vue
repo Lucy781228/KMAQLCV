@@ -32,7 +32,7 @@
                 </div>
             </div>
             <div class="grid-item">
-                <label>Nhãn</label>
+                <label>Nhãn(*)</label>
                 <NcMultiselect v-if="isEdit && isOwner" ref="label" class="nc-select" v-model="selectedLabel"
                     :options="labels" label="text" track-by="text" />
                 <input v-else type="text" v-model="initialWork.label" class="input-disabled" :disabled="true" />
@@ -156,11 +156,11 @@ export default {
         },
 
         getStartDate() {
-            return this.formatDateToDDMMYYYY(this.work.start_date)
+            return this.formatDate(this.work.start_date)
         },
 
         getEndDate() {
-            return this.formatDateToDDMMYYYY(this.work.end_date)
+            return this.formatDate(this.work.end_date)
         },
 
         getName() {
@@ -220,22 +220,26 @@ export default {
         cancelEditting() {
             this.isEdit = false
             this.work = JSON.parse(JSON.stringify(this.initialWork));
+            this.startDate = new Date(this.work.start_date * 1000)
+            this.endDate = new Date(this.work.end_date * 1000)
         },
 
-        formatDateToDDMMYYYY(inputDate) {
-            if (!inputDate) return 'Không';
-            const parts = inputDate.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        formatDate(timestamp) {
+            const date = new Date(timestamp * 1000)
+            const day = date.getDate().toString().padStart(2, '0')
+            const month = (date.getMonth() + 1).toString().padStart(2, '0')
+            const year = date.getFullYear()
+            return `${day}/${month}/${year}`
         },
 
         async getWork() {
             try {
                 const response = await axios.get(generateUrl(`/apps/qlcv/work_by_id/${this.workId}`));
                 this.work = response.data.work
-                this.initialWork = JSON.parse(JSON.stringify(this.work));
+                this.initialWork = JSON.parse(JSON.stringify(this.work))
                 this.getFullName()
-                this.startDate = new Date(this.work.start_date + '')
-                this.endDate = new Date(this.work.end_date + '')
+                this.startDate = new Date(this.work.start_date * 1000)
+                this.endDate = new Date(this.work.end_date * 1000)
                 this.setSelectedUser();
             } catch (e) {
                 console.error(e)
@@ -251,33 +255,44 @@ export default {
             }
         },
 
-        mysqlDateFormatter(date) {
-            if (!date) return '';
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        },
-
         async updateWork() {
             try {
+                const status = this.work.start_date <= new Date().setHours(0, 0, 0, 0) ? 1 : 0
+                const start = Math.floor(new Date(this.startDate).getTime() / 1000)
+                const end = Math.floor(new Date(this.endDate).getTime() / 1000)
                 const response = await axios.put('/apps/qlcv/update_work', {
-                    work_name: this.initialWork.work_name  === this.work.work_name ? null : this.work.work_name,
-                    description: this.initialWork.description  === this.work.description ? null : this.work.description,
-                    start_date: this.initialWork.start_date  === this.mysqlDateFormatter(this.startDate) ? null : this.mysqlDateFormatter(this.startDate),
-                    end_date: this.initialWork.end_date  === this.mysqlDateFormatter(this.endDate) ? null : this.mysqlDateFormatter(this.endDate),
+                    work_name: this.initialWork.work_name === this.work.work_name ? null : this.work.work_name,
+                    description: this.initialWork.description === this.work.description ? null : this.work.description,
+                    start_date: this.initialWork.start_date === start ? null : start,
+                    end_date: this.initialWork.end_date === end ? null : end,
                     label: this.selectedLabel && (this.initialWork.label !== this.selectedLabel.text) ? this.selectedLabel.text : null,
                     assigned_to: this.selectedUser.userId,
-                    status: null,
+                    status: status,
                     work_id: this.work.work_id,
                     project_id: this.receivedProjectID
                 });
                 this.isEdit = false
                 await this.getWork();
+                if (status == 1 && this.sharedProjectStatus == 0) this.updateProject()
                 showSuccess("Cập nhật thành công.")
                 this.cancelEditting()
             } catch (error) {
                 console.error("Lỗi khi tạo công việc: ", error);
+            }
+        },
+
+        async updateProject() {
+            try {
+                const response = await axios.put('/apps/qlcv/update_project', {
+                    project_name: null,
+                    description: null,
+                    user_id: null,
+                    project_id: this.receivedProjectID,
+                    status: 1
+                });
+                this.$store.commit('updateProjectStatus', 1)
+            } catch (e) {
+                console.error(e)
             }
         },
 

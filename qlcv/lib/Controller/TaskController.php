@@ -74,7 +74,8 @@ class TaskController extends Controller
      */
     public function updateTask($task_id, $content, $is_done) {
         try {
-            $this->authorizationService->hasAccessWork($work_id);
+            $task = $this->taskService->getTaskById($task_id);
+            $this->authorizationService->hasAccessWork($task["work_id"]);
             $result = $this->taskService->updateTask($task_id, $content, $is_done);
             return new JSONResponse($result);
         } catch (\Exception $e) {

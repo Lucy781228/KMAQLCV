@@ -77,4 +77,22 @@ class TaskService {
             throw new Exception("ERROR: " . $e->getMessage());
         }
     }
+
+    public function getTaskById($task_id) {
+        try {
+            $query = $this->db->getQueryBuilder();
+            $query->select("*")
+                  ->from("qlcv_task")
+                  ->where(
+                      $query->expr()->eq("task_id", $query->createNamedParameter($task_id))
+                  );
+    
+            $result = $query->execute();
+            $data = $result->fetch();
+    
+            return $data;
+        } catch (\Exception $e) {
+            throw new Exception("ERROR: " . $e->getMessage());
+        }
+    }
 }
