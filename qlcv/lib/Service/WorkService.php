@@ -188,6 +188,8 @@ class WorkService
         $label,
         $assigned_to,
         $status,
+        $is_returned,
+        $actual_end_date,
         $project_id
     ) {
         try {
@@ -198,7 +200,9 @@ class WorkService
                                                 `end_date` = COALESCE(?, `end_date`), 
                                                 `label` = COALESCE(?, `label`),
                                                 `assigned_to` = COALESCE(?, `assigned_to`),
-                                                `status` = COALESCE(?, `status`)
+                                                `status` = COALESCE(?, `status`),
+                                                `is_returned` = COALESCE(?, `is_returned`),
+                                                `actual_end_date` = COALESCE(?, `actual_end_date`)
                                                 WHERE `work_id` = ?';
             $query = $this->db->prepare($sql);
 
@@ -210,6 +214,8 @@ class WorkService
                 $label,
                 $assigned_to,
                 $status,
+                $is_returned,
+                $actual_end_date,
                 $work_id,
             ]);
 

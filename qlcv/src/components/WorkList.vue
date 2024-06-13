@@ -54,7 +54,7 @@
                     class="work-item" v-for="work in filteredWorksByStatus(status)" :key="work.work_id">
                     <Work :work-name="work.work_name" :label="work.label" :assigned-to="work.assigned_to"
                         :status="work.status" :work-id="work.work_id" @delete="showModal" :end-date="work.end_date"
-                        :is-project-owner="isProjectOwner" @update="getWorks" />
+                        :is-project-owner="isProjectOwner" @update="getWorks" :is-canceled="!work.actual_end_date && work.status == 3"/>
                 </router-link>
             </div>
         </div>
@@ -64,7 +64,7 @@
                 class="work-item">
                 <Work :work-name="work.work_name" :label="work.label" :assigned-to="work.assigned_to"
                     :status="work.status" :work-id="work.work_id" @delete="showModal" :end-date="work.end_date"
-                    :is-project-owner="isProjectOwner" @update="getWorks" />
+                    :is-project-owner="isProjectOwner" @update="getWorks" :is-canceled="!work.actual_end_date && work.status == 3"/>
             </router-link>
         </div>
         <router-view @back-to-worklist="getWorks" />

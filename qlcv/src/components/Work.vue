@@ -11,7 +11,7 @@
             <div v-else class="work-label" :style="textStyle(label)">{{ label }}</div>
         </div>
         <div class="work-footer">
-            <div class="footer-left" v-if="isDue">Quá hạn</div>
+            <div class="footer-left" v-if="isCanceled">Hủy</div>
             <div class="footer-right">
                 <NcAvatar :display-name="assignedTo" />
                 <div @click.stop.prevent>
@@ -27,7 +27,7 @@
                         <NcActionButton type="tertiary" @click.stop.prevent="updateStatus" v-if="status == 1"
                             :closeAfterClick="true">
                             <template #icon>
-                                <Check :size="16" />Đánh dấu đã hoàn thành
+                                <Check :size="16" />Hủy
                             </template>
                         </NcActionButton>
                     </NcActions>
@@ -90,11 +90,11 @@ export default {
             type: String,
             default: ""
         },
-        isDue: {
-            type: Boolean,
-            default: false
-        },
         isProjectOwner: {
+            type: Boolean,
+            required: true
+        },
+        isCanceled: {
             type: Boolean,
             required: true
         },
@@ -170,7 +170,9 @@ export default {
                     assigned_to: null,
                     status: this.newStatus,
                     work_id: this.workId,
-                    project_id: this.receivedProjectID
+                    project_id: this.receivedProjectID,
+                    is_returned: null,
+                    actual_end_date: null
                 });
                 this.$emit('update')
                 showSuccess("Cập nhật thành công.")
@@ -224,8 +226,11 @@ export default {
 }
 
 .footer-left {
-    color: red;
-    font-weight: bold;
+    font-size: 14px;
     margin-right: auto;
+    background-color: #4A5568;
+    color: white; 
+    border-radius: 10px;
+    padding: 2px 5px;
 }
 </style>

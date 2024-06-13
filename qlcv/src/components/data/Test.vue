@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="container" v-if="isLoaded">
     <div class="action-button">
       <NcButton type="tertiary" aria-label="Example text">
         <template #icon>
@@ -26,7 +26,7 @@
         <span>Thời gian hoàn thành dự kiến</span>
       </div>
     </div>
-    <Gantt class="left-container" :tasks="tasks"></Gantt>
+    <Gantt class="left-container" :tasks="workData"></Gantt>
   </div>
 </template>
 
@@ -35,7 +35,9 @@ import Gantt from './GanttChart.vue'
 import ChartLineVariant from 'vue-material-design-icons/ChartLineVariant.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import { NcButton } from "@nextcloud/vue";
-
+import axios from "@nextcloud/axios";
+import { generateUrl } from '@nextcloud/router'
+import { getCurrentUser } from '@nextcloud/auth'
 
 export default {
   name: 'Test',
@@ -54,11 +56,76 @@ export default {
           { "id": "1", "text": "Work 3", "start_date": "29-05-2024", "duration": 9, "estimated_duration": 6 },
           { "id": "3", "text": "Work 4", "start_date": "30-05-2024", "duration": 11 },
           { "id": "5", "text": "Work 5", "start_date": "03-06-2024", "duration": 10, "estimated_duration": 7 },
-          { "id": "6", "text": "Work 6", "start_date": "06-06-2024", "duration": 15, "estimated_duration": 10}
+          { "id": "6", "text": "Work 6", "start_date": "06-06-2024", "duration": 15, "estimated_duration": 10 }
         ]
-      }
+      },
+      user: getCurrentUser(),
+      workData: null,
+      isLoaded: false
     }
-  }
+  },
+  computed: {
+    receivedProjectID() {
+      return this.$store.state.sharedProjectID
+    },
+    receivedUserID() {
+      return this.$store.state.sharedProjectOwner
+    },
+  },
+  mounted() {
+    // this.getWorks()
+  },
+
+  watch: {
+    receivedProjectID: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal && this.receivedProjectID) {
+          console.log('getWorks')
+          this.getWorks();
+        }
+      }
+    },
+  },
+  methods: {
+    async getWorks() {
+      this.isLoaded = false
+      try {
+        const response = await axios.get(generateUrl('/apps/qlcv/works'), {
+          params: {
+            project_id: this.receivedProjectID,
+            user_id: this.receivedUserID,
+            assigned_to: this.user.uid
+          }
+        });
+        const works = response.data.works;
+
+        const formattedWorks = works.map(work => {
+          const startDate = new Date(work.start_date * 1000);
+          const endDate = work.end_date ? new Date(work.end_date * 1000) : null;
+          const actualEndDate = work.actual_end_date ? new Date(work.actual_end_date * 1000) : null;
+          const formattedStartDate = `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()}`;
+          const duration = endDate ? Math.ceil((endDate - startDate) / (24 * 3600 * 1000)) : 0;
+          const actualDuration = actualEndDate ? Math.ceil((actualEndDate - startDate) / (24 * 3600 * 1000)) : 0;
+
+          return {
+            id: work.work_id.toString(),
+            text: work.work_name,
+            start_date: formattedStartDate,
+            duration: duration,
+            estimated_duration: work.estimated_duration || 0,
+            actual_duration: actualDuration
+          };
+        });
+        this.workData = { "data": formattedWorks }
+        this.isLoaded = true
+
+      } catch (e) {
+        console.error(e);
+      }
+    },
+  },
+
 }
 </script>
 

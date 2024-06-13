@@ -277,7 +277,8 @@ class FileController extends Controller
     public function deleteFile($file_id, $owner)
     {
         try {
-            $this->authorizationService->isWorkOwner($work_id);
+            $result = $this->fileService->getFileById($file_id);
+            $this->authorizationService->isWorkOwner($result["work_id"]);
             try {
                 $qlcvFolder = $this->rootFolder->getUserFolder($owner)->get("QLCV");
                 $fileNodes = $qlcvFolder->getById($file_id);

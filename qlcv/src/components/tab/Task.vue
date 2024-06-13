@@ -28,7 +28,7 @@
   <div class="tasks" v-else>
     <div class="header">
       <h3 v-if="status != 0">Tiến độ: {{ completedTasksCount }}/{{ tasks.length }}</h3>
-      <NcButton :wide="true" aria-label="Example text" type="tertiary" @click="showNewTask" v-if="status == 0">
+      <NcButton :wide="true" aria-label="Example text" type="tertiary" @click="showNewTask" v-if="status == 0 || status == 1 && isOwner">
         <template #icon>
           <Plus :size="20" />
         </template>
@@ -43,7 +43,7 @@
             <div class="task-content" :class="task.is_done ? 'task-done' : 'task-not-done'">
               <label :for="`task-${task.task_id}`">{{ task.content }}</label>
             </div>
-            <NcActions class="task-actions" v-if="status == 0">
+            <NcActions class="task-actions" v-if="status == 0 || status == 1 && !task.is_done && isOwner">
               <template #icon>
                 <DotsHorizontal :size="16" />
               </template>
@@ -53,7 +53,7 @@
                 </template>
                 Chỉnh sửa
               </NcActionButton>
-              <NcActionButton type="tertiary" @click="showModal(task.task_id)">
+              <NcActionButton type="tertiary" @click="showModal(task.task_id)" v-if="tasks.length !== 1">
                 <template #icon>
                   <Delete :size="16" />
                 </template>
@@ -77,7 +77,7 @@
           </div>
         </div>
 
-        <div class="task-item-new" v-if="status == 0 && showAdd">
+        <div class="task-item-new" v-if="(status == 0 || status == 1) && showAdd">
           <input type="text" v-model="content" placeholder="Thêm tác vụ" />
           <NcButton type="tertiary" @click="hideNewTask" ariaLabel="A" class="button">
             <template #icon>
@@ -94,7 +94,7 @@
     </div>
     <NcModal :show="isCompleted" :canClose="false" size="small" style="z-index: 11000;">
       <div class="modal__content">
-        <div>Bạn đã hoàn thành tất cả tác vụ.
+        <div>Tất cả tác vụ đã hoàn thành.
           Công việc hiện trong trạng thái chờ duyệt.</div>
         <div class="modal__actions">
           <NcButton @click="closeModal" type="primary">
@@ -336,6 +336,10 @@ export default {
         showSuccess(t('qlcv', 'Xóa thành công'));
         this.getTasks()
         this.stopModal()
+        if (this.completedTasksCount == this.tasks.length) {
+          this.isCompleted = true
+          await this.updateWork(2)
+        }
       } catch (e) {
         console.error(e)
       }
@@ -352,7 +356,9 @@ export default {
           assigned_to: null,
           status: status,
           work_id: this.workId,
-          project_id: this.receivedProjectID
+          project_id: this.receivedProjectID,
+          is_returned: status == 1 ? true : null,
+          actual_end_date: status == 3 ? Math.floor(new Date().setHours(0, 0, 0, 0) / 1000) : null
         });
         this.status = status
         this.$store.commit('updateWorkStatus', status)
@@ -465,10 +471,6 @@ h3 {
   color: #333;
 }
 
-.task-actions {
-  margin-left: auto;
-}
-
 .task-item-new {
   display: flex;
   align-items: center;
@@ -501,5 +503,14 @@ input {
 
 .modal {
   z-index: 1000;
+}
+
+.task-actions {
+  display: none;
+  margin-left: auto;
+}
+
+.task-item-new:hover .task-actions {
+  display: block;
 }
 </style>

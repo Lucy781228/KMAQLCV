@@ -42,4 +42,15 @@ class FileService {
         $files = $result->fetchAll();
         return $files; 
     }
+
+    public function getFileById($fileId) {
+        $query = $this->db->getQueryBuilder();
+        $query->select('*')
+              ->from('qlcv_file')
+              ->where($query->expr()->eq('file_id', $query->createNamedParameter($fileId)));
+        $result = $query->execute();
+        $fileRecord = $result->fetch();
+    
+        return $fileRecord;
+    }
 }

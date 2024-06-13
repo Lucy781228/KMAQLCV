@@ -16,6 +16,18 @@ export default {
     }
   },
 
+  watch: {
+    tasks: {
+    deep: true,
+    handler(newVal) {
+      if (newVal && newVal.data) {
+        gantt.clearAll();
+        gantt.parse(newVal);
+      }
+    }
+  }
+},
+
   mounted() {
     gantt.plugins({
       marker: true
@@ -52,11 +64,8 @@ export default {
     this.$nextTick(() => {
     const tasks = gantt.getTaskByTime();
     if (tasks.length >= 3) {
-      // Lấy ID của task thứ ba
       const thirdTaskId = tasks[2].id;
-      // Sử dụng ID này để chọn task
       gantt.selectTask(thirdTaskId);
-      // Cuộn đến task này nếu cần
       gantt.showTask(thirdTaskId);
     }
   });

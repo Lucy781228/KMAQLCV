@@ -80,7 +80,7 @@ class AuthorizationService
                 throw new \Exception("Work not found", 404);
             }
 
-            if ($work["owner"] === $currentUser->getUID()) {
+            if ($work["owner"] == $currentUser->getUID()) {
                 return true;
             }
         }

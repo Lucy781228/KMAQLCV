@@ -163,10 +163,6 @@ class Version1000Date20240419163545 extends SimpleMigrationStep
             $table->addColumn("is_done", "boolean", [
                 "notnull" => false,
             ]);
-            $table->addColumn("complete_on", "integer", [
-                "notnull" => false,
-                "unsigned" => true,
-            ]);
             $table->setPrimaryKey(["task_id"]);
             $table->addIndex(['work_id'], 'work_index');
         }

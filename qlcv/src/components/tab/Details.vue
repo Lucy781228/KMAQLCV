@@ -269,7 +269,9 @@ export default {
                     assigned_to: this.selectedUser.userId,
                     status: status,
                     work_id: this.work.work_id,
-                    project_id: this.receivedProjectID
+                    project_id: this.receivedProjectID,
+                    is_returned: null,
+                    actual_end_date: null
                 });
                 this.isEdit = false
                 await this.getWork();

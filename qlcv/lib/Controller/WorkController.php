@@ -147,11 +147,13 @@ class WorkController extends Controller
         $label,
         $assigned_to,
         $status,
+        $is_returned,
+        $actual_end_date,
         $project_id
     ) {
         try {
-            if ($work_name === null && $description === null && $start_date === null
-            && $end_date === null && $label === null && $assigned_to === null)
+            if ($work_name === null && $description === null && $start_date === null && $is_returned === null
+            && $end_date === null && $label === null && $assigned_to === null && $actual_end_date === null)
             $this->authorizationService->hasAccessWork($work_id);
             else $this->authorizationService->isWorkOwner($work_id);
             $result = $this->workService->updateWork(
@@ -163,6 +165,8 @@ class WorkController extends Controller
                 $label,
                 $assigned_to,
                 $status,
+                $is_returned,
+                $actual_end_date,
                 $project_id
             );
             if ($work_name !== null) {
